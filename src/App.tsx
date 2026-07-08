@@ -12,9 +12,10 @@ import { CalendarView } from './components/CalendarView'
 import { CategoryManager } from './components/CategoryManager'
 import { SubscriptionManager } from './components/SubscriptionManager'
 import { SubscriptionReminder } from './components/SubscriptionReminder'
+import { LoginScreen } from './components/LoginScreen'
 
 function App() {
-  const { uid, loading: authLoading } = useAuth()
+  const { uid, loading: authLoading, signIn, signOut, error: authError } = useAuth()
   const {
     transactions,
     addTransaction,
@@ -67,10 +68,15 @@ function App() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <div className="text-gray-600">登入中...</div>
+          <div className="text-gray-600">載入中...</div>
         </div>
       </div>
     )
+  }
+
+  // 未登入顯示登入畫面
+  if (!uid) {
+    return <LoginScreen onSignIn={signIn} loading={authLoading} error={authError} />
   }
 
   // 顯示 uid 用於除錯
@@ -142,6 +148,16 @@ function App() {
             updateCategory={updateCategory}
             deleteCategory={deleteCategory}
           />
+
+          {/* 登出按鈕 */}
+          <div className="bg-white rounded-lg p-4 shadow-sm">
+            <button
+              onClick={signOut}
+              className="w-full py-3 px-4 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors font-medium"
+            >
+              登出
+            </button>
+          </div>
         </div>
       )}
     </Layout>
