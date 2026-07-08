@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   collection,
   query,
@@ -7,7 +7,8 @@ import {
   addDoc,
   updateDoc,
   doc,
-  writeBatch
+  writeBatch,
+  getDocs
 } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import {
@@ -20,7 +21,7 @@ import {
   DEFAULT_INCOME_CATEGORIES
 } from '../types'
 
-// 初始化預設分類（移到外面確保可以被正確調用）
+// 初始化預設分類
 const initializeDefaultCategories = async (userId: string) => {
   const batch = writeBatch(db)
   const categoriesRef = collection(db, 'users', userId, 'categories')
@@ -43,7 +44,6 @@ const initializeDefaultCategories = async (userId: string) => {
       batch.set(docRef, catData)
 
       if (item.children) {
-        // 遞迴新增子分類
         addCategoryTree(item.children, type, docRef.id)
       }
     })
@@ -53,13 +53,15 @@ const initializeDefaultCategories = async (userId: string) => {
   addCategoryTree(DEFAULT_INCOME_CATEGORIES, 'income')
 
   await batch.commit()
+  console.log('預設分類已建立')
 }
 
 export function useCategories(uid: string | undefined) {
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
-  const [initialized, setInitialized] = useState(false)
+  const initializingRef = useRef(false)
 
+  // 確保分類存在
   useEffect(() => {
     if (!uid) {
       setLoading(false)
@@ -67,34 +69,41 @@ export function useCategories(uid: string | undefined) {
     }
 
     const categoriesRef = collection(db, 'users', uid, 'categories')
-    const q = query(categoriesRef, orderBy('order', 'asc'))
 
-    const unsubscribe = onSnapshot(q, async (snapshot) => {
-      if (snapshot.empty && !initialized) {
-        // 初始化預設分類（只執行一次）
-        setInitialized(true)
+    // 先檢查並初始化
+    const checkAndInit = async () => {
+      if (initializingRef.current) return
+
+      const snapshot = await getDocs(categoriesRef)
+      if (snapshot.empty) {
+        initializingRef.current = true
         try {
           await initializeDefaultCategories(uid)
-          // onSnapshot 會自動觸發更新
         } catch (error) {
           console.error('初始化分類失敗:', error)
-          setLoading(false)
         }
-      } else {
-        const data: Category[] = snapshot.docs.map((docSnap) => {
-          const docData = docSnap.data() as CategoryDoc
-          return {
-            id: docSnap.id,
-            ...docData
-          }
-        })
-        setCategories(data)
-        setLoading(false)
+        initializingRef.current = false
       }
+    }
+
+    checkAndInit()
+
+    // 監聽分類變化
+    const q = query(categoriesRef, orderBy('order', 'asc'))
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const data: Category[] = snapshot.docs.map((docSnap) => {
+        const docData = docSnap.data() as CategoryDoc
+        return {
+          id: docSnap.id,
+          ...docData
+        }
+      })
+      setCategories(data)
+      setLoading(false)
     })
 
     return () => unsubscribe()
-  }, [uid, initialized])
+  }, [uid])
 
   // 新增分類
   const addCategory = useCallback(async (input: CategoryInput) => {
