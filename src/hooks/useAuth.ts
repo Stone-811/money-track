@@ -26,9 +26,12 @@ export function useAuth() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
-        // 檢查是否在白名單中
-        const email = currentUser.email || ''
-        if (ALLOWED_EMAILS.includes(email)) {
+        // 檢查是否在白名單中（不區分大小寫）
+        const email = (currentUser.email || '').toLowerCase()
+        const isInWhitelist = ALLOWED_EMAILS.some(
+          allowed => allowed.toLowerCase() === email
+        )
+        if (isInWhitelist) {
           setUser(currentUser)
           setIsAllowed(true)
           setError(null)
@@ -36,7 +39,7 @@ export function useAuth() {
           // 不在白名單，登出
           setUser(null)
           setIsAllowed(false)
-          setError(`此帳號 (${email}) 沒有使用權限`)
+          setError(`此帳號 (${currentUser.email}) 沒有使用權限`)
           firebaseSignOut(auth)
         }
       } else {
