@@ -68,21 +68,29 @@ export function useCategories(uid: string | undefined) {
       return
     }
 
+    console.log('useCategories: uid =', uid)
     const categoriesRef = collection(db, 'users', uid, 'categories')
 
     // 先檢查並初始化
     const checkAndInit = async () => {
       if (initializingRef.current) return
 
-      const snapshot = await getDocs(categoriesRef)
-      if (snapshot.empty) {
-        initializingRef.current = true
-        try {
+      try {
+        console.log('檢查現有分類...')
+        const snapshot = await getDocs(categoriesRef)
+        console.log('現有分類數量:', snapshot.size)
+
+        if (snapshot.empty) {
+          console.log('分類為空，開始初始化...')
+          initializingRef.current = true
           await initializeDefaultCategories(uid)
-        } catch (error) {
-          console.error('初始化分類失敗:', error)
+          console.log('初始化完成')
+          initializingRef.current = false
         }
+      } catch (error: any) {
+        console.error('檢查/初始化分類失敗:', error.code, error.message)
         initializingRef.current = false
+        setLoading(false)
       }
     }
 
@@ -90,17 +98,25 @@ export function useCategories(uid: string | undefined) {
 
     // 監聽分類變化
     const q = query(categoriesRef, orderBy('order', 'asc'))
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data: Category[] = snapshot.docs.map((docSnap) => {
-        const docData = docSnap.data() as CategoryDoc
-        return {
-          id: docSnap.id,
-          ...docData
-        }
-      })
-      setCategories(data)
-      setLoading(false)
-    })
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        console.log('onSnapshot: 收到', snapshot.size, '個分類')
+        const data: Category[] = snapshot.docs.map((docSnap) => {
+          const docData = docSnap.data() as CategoryDoc
+          return {
+            id: docSnap.id,
+            ...docData
+          }
+        })
+        setCategories(data)
+        setLoading(false)
+      },
+      (error) => {
+        console.error('onSnapshot 錯誤:', error.code, error.message)
+        setLoading(false)
+      }
+    )
 
     return () => unsubscribe()
   }, [uid])
