@@ -3,6 +3,7 @@ import { Category, CategoryInput, TransactionType, CategoryTreeNode } from '../t
 
 interface CategoryManagerProps {
   categories: Category[]
+  loading?: boolean
   buildTree: (type: TransactionType) => CategoryTreeNode[]
   addCategory: (input: CategoryInput) => Promise<void>
   updateCategory: (id: string, input: Partial<CategoryInput>) => Promise<void>
@@ -11,6 +12,7 @@ interface CategoryManagerProps {
 
 export function CategoryManager({
   categories,
+  loading = false,
   buildTree,
   addCategory,
   updateCategory,
@@ -194,42 +196,63 @@ export function CategoryManager({
         </button>
       </div>
 
+      {/* 載入中 */}
+      {loading && (
+        <div className="text-center py-8">
+          <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+          <p className="text-gray-500">載入分類中...</p>
+        </div>
+      )}
+
+      {/* 空狀態 */}
+      {!loading && tree.length === 0 && (
+        <div className="text-center py-8 text-gray-500">
+          <p className="mb-2">尚無{activeType === 'expense' ? '支出' : '收入'}分類</p>
+          <p className="text-xs">分類數量: {categories.length}</p>
+          <p className="text-xs">請使用下方按鈕新增分類</p>
+        </div>
+      )}
+
       {/* 分類樹 */}
-      <div className="space-y-1">
-        {tree.map((node) => renderNode(node))}
-      </div>
+      {!loading && tree.length > 0 && (
+        <div className="space-y-1">
+          {tree.map((node) => renderNode(node))}
+        </div>
+      )}
 
       {/* 新增大類 */}
-      {addingTo?.parentId === null ? (
-        <div className="flex items-center gap-2 mt-4 pt-4 border-t">
-          <input
-            type="text"
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            placeholder="輸入大類名稱"
-            className="flex-1 px-3 py-2 border rounded-lg"
-            autoFocus
-          />
+      {!loading && (
+        addingTo?.parentId === null ? (
+          <div className="flex items-center gap-2 mt-4 pt-4 border-t">
+            <input
+              type="text"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              placeholder="輸入大類名稱"
+              className="flex-1 px-3 py-2 border rounded-lg"
+              autoFocus
+            />
+            <button
+              onClick={handleSaveAdd}
+              className="px-4 py-2 bg-green-500 text-white rounded-lg"
+            >
+              新增
+            </button>
+            <button
+              onClick={() => setAddingTo(null)}
+              className="px-4 py-2 bg-gray-200 rounded-lg"
+            >
+              取消
+            </button>
+          </div>
+        ) : (
           <button
-            onClick={handleSaveAdd}
-            className="px-4 py-2 bg-green-500 text-white rounded-lg"
+            onClick={() => handleStartAdd(null, 1)}
+            className="w-full mt-4 py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-blue-400 hover:text-blue-500 transition-colors"
           >
-            新增
+            + 新增大類
           </button>
-          <button
-            onClick={() => setAddingTo(null)}
-            className="px-4 py-2 bg-gray-200 rounded-lg"
-          >
-            取消
-          </button>
-        </div>
-      ) : (
-        <button
-          onClick={() => handleStartAdd(null, 1)}
-          className="w-full mt-4 py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-blue-400 hover:text-blue-500 transition-colors"
-        >
-          + 新增大類
-        </button>
+        )
       )}
     </div>
   )

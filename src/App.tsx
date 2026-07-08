@@ -17,7 +17,6 @@ function App() {
   const { uid, loading: authLoading } = useAuth()
   const {
     transactions,
-    loading: transLoading,
     addTransaction,
     deleteTransaction,
     getCategoryStats,
@@ -63,16 +62,19 @@ function App() {
   }
 
   // Loading 狀態
-  if (authLoading || transLoading || catLoading) {
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <div className="text-gray-600">載入中...</div>
+          <div className="text-gray-600">登入中...</div>
         </div>
       </div>
     )
   }
+
+  // 顯示 uid 用於除錯
+  console.log('uid:', uid, 'categories:', categories.length)
 
   return (
     <Layout activeTab={activeTab} onTabChange={setActiveTab}>
@@ -134,6 +136,7 @@ function App() {
         <div className="space-y-4">
           <CategoryManager
             categories={categories}
+            loading={catLoading}
             buildTree={buildTree}
             addCategory={addCategory}
             updateCategory={updateCategory}
