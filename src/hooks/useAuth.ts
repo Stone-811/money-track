@@ -12,7 +12,7 @@ import { auth } from '../lib/firebase'
 // 請將你的 Gmail 加入此處
 const ALLOWED_EMAILS = [
   'stone870811@gmail.com',
-  // 可以加入更多允許的 email
+  'tingo8320@gmail.com',
 ]
 
 const googleProvider = new GoogleAuthProvider()
