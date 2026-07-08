@@ -1,0 +1,29 @@
+import { useState, useEffect } from 'react'
+import { signInAnonymously, onAuthStateChanged, User } from 'firebase/auth'
+import { auth } from '../lib/firebase'
+
+export function useAuth() {
+  const [user, setUser] = useState<User | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (currentUser) {
+        setUser(currentUser)
+        setLoading(false)
+      } else {
+        // 自動匿名登入
+        try {
+          await signInAnonymously(auth)
+        } catch (error) {
+          console.error('匿名登入失敗:', error)
+          setLoading(false)
+        }
+      }
+    })
+
+    return () => unsubscribe()
+  }, [])
+
+  return { user, loading, uid: user?.uid }
+}
