@@ -214,12 +214,31 @@ export function useCategories(uid: string | undefined) {
       .sort((a, b) => a.order - b.order)
   }, [categories])
 
+  // 重置分類（刪除所有並重新初始化）
+  const resetCategories = useCallback(async () => {
+    if (!uid) return
+
+    const categoriesRef = collection(db, 'users', uid, 'categories')
+    const snapshot = await getDocs(categoriesRef)
+
+    // 刪除所有現有分類
+    const batch = writeBatch(db)
+    snapshot.docs.forEach((docSnap) => {
+      batch.delete(docSnap.ref)
+    })
+    await batch.commit()
+
+    // 重新初始化
+    await initializeDefaultCategories(uid)
+  }, [uid])
+
   return {
     categories,
     loading,
     addCategory,
     updateCategory,
     deleteCategory,
+    resetCategories,
     buildTree,
     getCategoryPath,
     getCategoriesByType,

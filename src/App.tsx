@@ -30,6 +30,7 @@ function App() {
     addCategory,
     updateCategory,
     deleteCategory,
+    resetCategories,
     buildTree,
     getCategoryPath,
     getChildren
@@ -148,6 +149,20 @@ function App() {
             updateCategory={updateCategory}
             deleteCategory={deleteCategory}
           />
+
+          {/* 重置分類按鈕 */}
+          <div className="bg-white rounded-lg p-4 shadow-sm">
+            <button
+              onClick={async () => {
+                if (confirm('確定要重置所有分類嗎？這將刪除所有自訂分類並恢復預設值。')) {
+                  await resetCategories()
+                }
+              }}
+              className="w-full py-3 px-4 bg-orange-50 text-orange-600 rounded-lg hover:bg-orange-100 transition-colors font-medium"
+            >
+              重置為預設分類
+            </button>
+          </div>
 
           {/* 登出按鈕 */}
           <div className="bg-white rounded-lg p-4 shadow-sm">
