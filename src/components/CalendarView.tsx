@@ -1,14 +1,26 @@
 import { useState, useMemo } from 'react'
-import { Transaction, Subscription } from '../types'
+import { Transaction, Subscription, TransactionInput, TransactionType, Category } from '../types'
 import { DayDetail } from './DayDetail'
 
 interface CalendarViewProps {
   transactions: Transaction[]
   subscriptions: Subscription[]
+  categories: Category[]
   onDeleteTransaction: (id: string) => void
+  onAddTransaction: (input: TransactionInput) => Promise<void>
+  getChildren: (parentId: string | null, type: TransactionType) => Category[]
+  getCategoryPath: (categoryId: string) => string[]
 }
 
-export function CalendarView({ transactions, subscriptions, onDeleteTransaction }: CalendarViewProps) {
+export function CalendarView({
+  transactions,
+  subscriptions,
+  categories,
+  onDeleteTransaction,
+  onAddTransaction,
+  getChildren,
+  getCategoryPath
+}: CalendarViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
 
@@ -231,8 +243,12 @@ export function CalendarView({ transactions, subscriptions, onDeleteTransaction 
         <DayDetail
           date={selectedDate}
           transactions={selectedDayData.transactions}
+          categories={categories}
           onClose={() => setSelectedDate(null)}
           onDelete={onDeleteTransaction}
+          onAdd={onAddTransaction}
+          getChildren={getChildren}
+          getCategoryPath={getCategoryPath}
         />
       )}
     </div>
