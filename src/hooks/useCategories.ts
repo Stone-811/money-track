@@ -20,9 +20,45 @@ import {
   DEFAULT_INCOME_CATEGORIES
 } from '../types'
 
+// 初始化預設分類（移到外面確保可以被正確調用）
+const initializeDefaultCategories = async (userId: string) => {
+  const batch = writeBatch(db)
+  const categoriesRef = collection(db, 'users', userId, 'categories')
+  let order = 0
+
+  const addCategoryTree = (
+    items: readonly any[],
+    type: TransactionType,
+    parentId: string | null = null
+  ) => {
+    items.forEach((item) => {
+      const docRef = doc(categoriesRef)
+      const catData: CategoryDoc = {
+        name: item.name,
+        type,
+        parentId,
+        level: item.level as 1 | 2 | 3,
+        order: order++
+      }
+      batch.set(docRef, catData)
+
+      if (item.children) {
+        // 遞迴新增子分類
+        addCategoryTree(item.children, type, docRef.id)
+      }
+    })
+  }
+
+  addCategoryTree(DEFAULT_EXPENSE_CATEGORIES, 'expense')
+  addCategoryTree(DEFAULT_INCOME_CATEGORIES, 'income')
+
+  await batch.commit()
+}
+
 export function useCategories(uid: string | undefined) {
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
+  const [initialized, setInitialized] = useState(false)
 
   useEffect(() => {
     if (!uid) {
@@ -34,9 +70,16 @@ export function useCategories(uid: string | undefined) {
     const q = query(categoriesRef, orderBy('order', 'asc'))
 
     const unsubscribe = onSnapshot(q, async (snapshot) => {
-      if (snapshot.empty) {
-        // 初始化預設分類
-        await initializeDefaultCategories(uid)
+      if (snapshot.empty && !initialized) {
+        // 初始化預設分類（只執行一次）
+        setInitialized(true)
+        try {
+          await initializeDefaultCategories(uid)
+          // onSnapshot 會自動觸發更新
+        } catch (error) {
+          console.error('初始化分類失敗:', error)
+          setLoading(false)
+        }
       } else {
         const data: Category[] = snapshot.docs.map((docSnap) => {
           const docData = docSnap.data() as CategoryDoc
@@ -46,47 +89,12 @@ export function useCategories(uid: string | undefined) {
           }
         })
         setCategories(data)
+        setLoading(false)
       }
-      setLoading(false)
     })
 
     return () => unsubscribe()
-  }, [uid])
-
-  // 初始化預設分類
-  const initializeDefaultCategories = async (userId: string) => {
-    const batch = writeBatch(db)
-    const categoriesRef = collection(db, 'users', userId, 'categories')
-    let order = 0
-
-    const addCategoryTree = (
-      items: readonly any[],
-      type: TransactionType,
-      parentId: string | null = null
-    ) => {
-      items.forEach((item) => {
-        const docRef = doc(categoriesRef)
-        const catData: CategoryDoc = {
-          name: item.name,
-          type,
-          parentId,
-          level: item.level as 1 | 2 | 3,
-          order: order++
-        }
-        batch.set(docRef, catData)
-
-        if (item.children) {
-          // 遞迴新增子分類
-          addCategoryTree(item.children, type, docRef.id)
-        }
-      })
-    }
-
-    addCategoryTree(DEFAULT_EXPENSE_CATEGORIES, 'expense')
-    addCategoryTree(DEFAULT_INCOME_CATEGORIES, 'income')
-
-    await batch.commit()
-  }
+  }, [uid, initialized])
 
   // 新增分類
   const addCategory = useCallback(async (input: CategoryInput) => {
@@ -181,22 +189,6 @@ export function useCategories(uid: string | undefined) {
       .sort((a, b) => a.order - b.order)
   }, [categories])
 
-  // 重置為預設分類
-  const resetToDefaults = useCallback(async () => {
-    if (!uid) return
-
-    // 刪除所有現有分類
-    const batch = writeBatch(db)
-    categories.forEach((cat) => {
-      const docRef = doc(db, 'users', uid, 'categories', cat.id)
-      batch.delete(docRef)
-    })
-    await batch.commit()
-
-    // 重新初始化預設分類
-    await initializeDefaultCategories(uid)
-  }, [uid, categories])
-
   return {
     categories,
     loading,
@@ -206,7 +198,6 @@ export function useCategories(uid: string | undefined) {
     buildTree,
     getCategoryPath,
     getCategoriesByType,
-    getChildren,
-    resetToDefaults
+    getChildren
   }
 }

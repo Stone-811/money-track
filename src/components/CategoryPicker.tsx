@@ -88,8 +88,8 @@ export function CategoryPicker({
   if (level1Categories.length === 0) {
     return (
       <div className="text-center py-4 text-gray-500">
-        <p className="text-sm">尚無{type === 'expense' ? '支出' : '收入'}分類</p>
-        <p className="text-xs mt-1">請到「設定」頁面點擊「重置為預設分類」</p>
+        <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+        <p className="text-sm">正在載入分類...</p>
       </div>
     )
   }

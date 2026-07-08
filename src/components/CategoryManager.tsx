@@ -7,7 +7,6 @@ interface CategoryManagerProps {
   addCategory: (input: CategoryInput) => Promise<void>
   updateCategory: (id: string, input: Partial<CategoryInput>) => Promise<void>
   deleteCategory: (id: string) => Promise<void>
-  resetToDefaults: () => Promise<void>
 }
 
 export function CategoryManager({
@@ -15,10 +14,8 @@ export function CategoryManager({
   buildTree,
   addCategory,
   updateCategory,
-  deleteCategory,
-  resetToDefaults
+  deleteCategory
 }: CategoryManagerProps) {
-  const [resetting, setResetting] = useState(false)
   const [activeType, setActiveType] = useState<TransactionType>('expense')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editName, setEditName] = useState('')
@@ -66,17 +63,6 @@ export function CategoryManager({
   const handleDelete = async (cat: Category) => {
     if (window.confirm(`確定要刪除「${cat.name}」及其所有子分類嗎？`)) {
       await deleteCategory(cat.id)
-    }
-  }
-
-  const handleReset = async () => {
-    if (window.confirm('確定要重置所有分類為預設值嗎？\n這會刪除所有自訂分類！')) {
-      setResetting(true)
-      try {
-        await resetToDefaults()
-      } finally {
-        setResetting(false)
-      }
     }
   }
 
@@ -245,20 +231,6 @@ export function CategoryManager({
           + 新增大類
         </button>
       )}
-
-      {/* 重置按鈕 */}
-      <div className="mt-6 pt-4 border-t">
-        <button
-          onClick={handleReset}
-          disabled={resetting}
-          className="w-full py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-red-50 hover:text-red-600 transition-colors disabled:opacity-50"
-        >
-          {resetting ? '重置中...' : '重置為預設分類'}
-        </button>
-        <p className="text-xs text-gray-400 text-center mt-2">
-          如果看不到分類，請點擊此按鈕初始化預設分類
-        </p>
-      </div>
     </div>
   )
 }
