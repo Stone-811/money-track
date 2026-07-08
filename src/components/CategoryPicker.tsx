@@ -18,9 +18,9 @@ export function CategoryPicker({
   getChildren,
   getCategoryPath
 }: CategoryPickerProps) {
-  const [level1, setLevel1] = useState<string | null>(null)
-  const [level2, setLevel2] = useState<string | null>(null)
-  const [level3, setLevel3] = useState<string | null>(null)
+  const [level1, setLevel1] = useState<string>('')
+  const [level2, setLevel2] = useState<string>('')
+  const [level3, setLevel3] = useState<string>('')
 
   // 根據 selectedId 初始化選擇狀態
   useEffect(() => {
@@ -28,58 +28,61 @@ export function CategoryPicker({
       const selected = categories.find(c => c.id === selectedId)
 
       if (selected) {
-        // 找到對應的層級
         if (selected.level === 1) {
           setLevel1(selectedId)
-          setLevel2(null)
-          setLevel3(null)
+          setLevel2('')
+          setLevel3('')
         } else if (selected.level === 2) {
-          setLevel1(selected.parentId)
+          setLevel1(selected.parentId || '')
           setLevel2(selectedId)
-          setLevel3(null)
+          setLevel3('')
         } else if (selected.level === 3) {
           const parent = categories.find(c => c.id === selected.parentId)
-          setLevel1(parent?.parentId || null)
-          setLevel2(selected.parentId)
+          setLevel1(parent?.parentId || '')
+          setLevel2(selected.parentId || '')
           setLevel3(selectedId)
         }
       }
     }
-  }, [selectedId, categories, getCategoryPath])
+  }, [selectedId, categories])
 
   const level1Categories = getChildren(null, type)
   const level2Categories = level1 ? getChildren(level1, type) : []
   const level3Categories = level2 ? getChildren(level2, type) : []
 
-  const handleLevel1Select = (id: string) => {
+  const handleLevel1Change = (id: string) => {
     setLevel1(id)
-    setLevel2(null)
-    setLevel3(null)
+    setLevel2('')
+    setLevel3('')
 
-    const children = getChildren(id, type)
-    if (children.length === 0) {
-      // 沒有子分類，直接選中
-      const path = getCategoryPath(id)
-      onSelect(id, path)
+    if (id) {
+      const children = getChildren(id, type)
+      if (children.length === 0) {
+        const path = getCategoryPath(id)
+        onSelect(id, path)
+      }
     }
   }
 
-  const handleLevel2Select = (id: string) => {
+  const handleLevel2Change = (id: string) => {
     setLevel2(id)
-    setLevel3(null)
+    setLevel3('')
 
-    const children = getChildren(id, type)
-    if (children.length === 0) {
-      // 沒有子分類，直接選中
-      const path = getCategoryPath(id)
-      onSelect(id, path)
+    if (id) {
+      const children = getChildren(id, type)
+      if (children.length === 0) {
+        const path = getCategoryPath(id)
+        onSelect(id, path)
+      }
     }
   }
 
-  const handleLevel3Select = (id: string) => {
+  const handleLevel3Change = (id: string) => {
     setLevel3(id)
-    const path = getCategoryPath(id)
-    onSelect(id, path)
+    if (id) {
+      const path = getCategoryPath(id)
+      onSelect(id, path)
+    }
   }
 
   const selectedPath = selectedId ? getCategoryPath(selectedId) : []
@@ -94,79 +97,79 @@ export function CategoryPicker({
     )
   }
 
+  const selectClass = `
+    w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl
+    text-gray-700 text-base font-medium
+    focus:border-blue-500 focus:ring-2 focus:ring-blue-100 focus:outline-none
+    transition-all cursor-pointer appearance-none
+    bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236B7280%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')]
+    bg-[length:20px] bg-[right_12px_center] bg-no-repeat
+  `
+
   return (
     <div className="space-y-3">
       {/* 已選擇的顯示 */}
       {selectedPath.length > 0 && (
-        <div className="px-3 py-2 bg-blue-50 rounded-lg text-blue-700 text-sm">
-          已選擇: {selectedPath.join(' > ')}
+        <div className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
+          <svg className="w-5 h-5 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+          <span className="text-blue-700 font-medium">{selectedPath.join(' › ')}</span>
         </div>
       )}
 
       {/* 大類 */}
       <div>
-        <label className="block text-xs text-gray-500 mb-1">大類</label>
-        <div className="flex flex-wrap gap-2">
+        <label className="block text-sm font-medium text-gray-600 mb-1.5">大類</label>
+        <select
+          value={level1}
+          onChange={(e) => handleLevel1Change(e.target.value)}
+          className={selectClass}
+        >
+          <option value="">請選擇大類...</option>
           {level1Categories.map((cat) => (
-            <button
-              key={cat.id}
-              type="button"
-              onClick={() => handleLevel1Select(cat.id)}
-              className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
-                level1 === cat.id
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
+            <option key={cat.id} value={cat.id}>
               {cat.name}
-            </button>
+            </option>
           ))}
-        </div>
+        </select>
       </div>
 
       {/* 中類 */}
       {level2Categories.length > 0 && (
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">中類</label>
-          <div className="flex flex-wrap gap-2">
+        <div className="animate-fadeIn">
+          <label className="block text-sm font-medium text-gray-600 mb-1.5">中類</label>
+          <select
+            value={level2}
+            onChange={(e) => handleLevel2Change(e.target.value)}
+            className={selectClass}
+          >
+            <option value="">請選擇中類...</option>
             {level2Categories.map((cat) => (
-              <button
-                key={cat.id}
-                type="button"
-                onClick={() => handleLevel2Select(cat.id)}
-                className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
-                  level2 === cat.id
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
+              <option key={cat.id} value={cat.id}>
                 {cat.name}
-              </button>
+              </option>
             ))}
-          </div>
+          </select>
         </div>
       )}
 
       {/* 小類 */}
       {level3Categories.length > 0 && (
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">小類</label>
-          <div className="flex flex-wrap gap-2">
+        <div className="animate-fadeIn">
+          <label className="block text-sm font-medium text-gray-600 mb-1.5">小類</label>
+          <select
+            value={level3}
+            onChange={(e) => handleLevel3Change(e.target.value)}
+            className={selectClass}
+          >
+            <option value="">請選擇小類...</option>
             {level3Categories.map((cat) => (
-              <button
-                key={cat.id}
-                type="button"
-                onClick={() => handleLevel3Select(cat.id)}
-                className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
-                  level3 === cat.id
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
+              <option key={cat.id} value={cat.id}>
                 {cat.name}
-              </button>
+              </option>
             ))}
-          </div>
+          </select>
         </div>
       )}
     </div>
