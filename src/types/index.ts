@@ -122,60 +122,56 @@ export interface SubscriptionDoc {
   createdAt: Timestamp
 }
 
-// 預設分類結構
+// 預設分類結構（只有大類和中類）
 export const DEFAULT_EXPENSE_CATEGORIES = [
-  { name: '食', level: 1, children: [
-    { name: '外食', level: 2, children: [
-      { name: '早餐', level: 3 },
-      { name: '午餐', level: 3 },
-      { name: '晚餐', level: 3 },
-      { name: '宵夜', level: 3 },
-    ]},
-    { name: '飲料', level: 2 },
-    { name: '食材', level: 2 },
+  { name: '飲食', level: 1, children: [
+    { name: '早餐', level: 2 },
+    { name: '午餐', level: 2 },
+    { name: '晚餐', level: 2 },
+    { name: '飲品', level: 2 },
+    { name: '點心', level: 2 },
   ]},
-  { name: '衣', level: 1 },
-  { name: '住', level: 1, children: [
-    { name: '房租', level: 2 },
-    { name: '水電', level: 2 },
-    { name: '網路', level: 2 },
-    { name: '管理費', level: 2 },
+  { name: '市場超市', level: 1, children: [
+    { name: '青菜', level: 2 },
+    { name: '肉類', level: 2 },
+    { name: '成菜', level: 2 },
+    { name: '水果', level: 2 },
+    { name: 'SOGO', level: 2 },
+    { name: '全聯', level: 2 },
+    { name: '棉花田', level: 2 },
+    { name: '其他', level: 2 },
   ]},
-  { name: '行', level: 1, children: [
-    { name: '交通', level: 2, children: [
-      { name: '捷運', level: 3 },
-      { name: '公車', level: 3 },
-      { name: '計程車', level: 3 },
-    ]},
-    { name: '油費', level: 2 },
-    { name: '停車', level: 2 },
+  { name: '會員費用', level: 1 },
+  { name: '交通', level: 1, children: [
+    { name: 'TPass', level: 2 },
+    { name: '計程車', level: 2 },
   ]},
-  { name: '育', level: 1, children: [
-    { name: '學費', level: 2 },
-    { name: '書籍', level: 2 },
-    { name: '課程', level: 2 },
-  ]},
-  { name: '樂', level: 1, children: [
-    { name: '娛樂', level: 2 },
-    { name: '訂閱', level: 2 },
-    { name: '旅遊', level: 2 },
+  { name: '娛樂', level: 1, children: [
+    { name: '9局職棒', level: 2 },
+    { name: 'PokemonGo', level: 2 },
+    { name: '門票', level: 2 },
+    { name: '其他', level: 2 },
   ]},
   { name: '醫療', level: 1 },
+  { name: '球卡', level: 1, children: [
+    { name: '寄件費', level: 2 },
+    { name: 'Y拍手續費', level: 2 },
+    { name: '福袋', level: 2 },
+    { name: '買卡', level: 2 },
+    { name: '其他', level: 2 },
+  ]},
+  { name: '旅遊', level: 1, children: [
+    { name: '住宿', level: 2 },
+    { name: '機票', level: 2 },
+  ]},
+  { name: '衣服', level: 1 },
   { name: '其他', level: 1 },
 ] as const
 
 export const DEFAULT_INCOME_CATEGORIES = [
-  { name: '薪資', level: 1, children: [
-    { name: '本薪', level: 2 },
-    { name: '獎金', level: 2 },
-    { name: '加班費', level: 2 },
-  ]},
-  { name: '投資', level: 1, children: [
-    { name: '股票', level: 2 },
-    { name: '基金', level: 2 },
-    { name: '利息', level: 2 },
-  ]},
-  { name: '副業', level: 1 },
+  { name: '薪資', level: 1 },
+  { name: '投資', level: 1 },
+  { name: '球卡收入', level: 1 },
   { name: '其他', level: 1 },
 ] as const
 
