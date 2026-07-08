@@ -32,7 +32,8 @@ function App() {
     deleteCategory,
     buildTree,
     getCategoryPath,
-    getChildren
+    getChildren,
+    resetToDefaults
   } = useCategories(uid)
   const {
     subscriptions,
@@ -138,6 +139,7 @@ function App() {
             addCategory={addCategory}
             updateCategory={updateCategory}
             deleteCategory={deleteCategory}
+            resetToDefaults={resetToDefaults}
           />
         </div>
       )}

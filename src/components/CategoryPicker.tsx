@@ -84,6 +84,16 @@ export function CategoryPicker({
 
   const selectedPath = selectedId ? getCategoryPath(selectedId) : []
 
+  // 沒有分類時顯示提示
+  if (level1Categories.length === 0) {
+    return (
+      <div className="text-center py-4 text-gray-500">
+        <p className="text-sm">尚無{type === 'expense' ? '支出' : '收入'}分類</p>
+        <p className="text-xs mt-1">請到「設定」頁面點擊「重置為預設分類」</p>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-3">
       {/* 已選擇的顯示 */}

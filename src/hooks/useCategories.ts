@@ -181,6 +181,22 @@ export function useCategories(uid: string | undefined) {
       .sort((a, b) => a.order - b.order)
   }, [categories])
 
+  // 重置為預設分類
+  const resetToDefaults = useCallback(async () => {
+    if (!uid) return
+
+    // 刪除所有現有分類
+    const batch = writeBatch(db)
+    categories.forEach((cat) => {
+      const docRef = doc(db, 'users', uid, 'categories', cat.id)
+      batch.delete(docRef)
+    })
+    await batch.commit()
+
+    // 重新初始化預設分類
+    await initializeDefaultCategories(uid)
+  }, [uid, categories])
+
   return {
     categories,
     loading,
@@ -190,6 +206,7 @@ export function useCategories(uid: string | undefined) {
     buildTree,
     getCategoryPath,
     getCategoriesByType,
-    getChildren
+    getChildren,
+    resetToDefaults
   }
 }
