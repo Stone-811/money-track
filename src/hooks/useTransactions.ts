@@ -33,10 +33,12 @@ export function useTransactions(uid: string | undefined) {
           id: docSnap.id,
           type: docData.type,
           amount: docData.amount,
-          category: docData.category,
+          categoryId: docData.categoryId || '',
+          categoryPath: docData.categoryPath || [],
           description: docData.description,
           date: docData.date.toDate(),
-          createdAt: docData.createdAt.toDate()
+          createdAt: docData.createdAt.toDate(),
+          subscriptionId: docData.subscriptionId
         }
       })
       setTransactions(data)
@@ -53,10 +55,12 @@ export function useTransactions(uid: string | undefined) {
     const docData: TransactionDoc = {
       type: input.type,
       amount: input.amount,
-      category: input.category,
+      categoryId: input.categoryId,
+      categoryPath: input.categoryPath,
       description: input.description,
       date: Timestamp.fromDate(input.date),
-      createdAt: Timestamp.now()
+      createdAt: Timestamp.now(),
+      subscriptionId: input.subscriptionId
     }
     await addDoc(transactionsRef, docData)
   }, [uid])
@@ -69,7 +73,8 @@ export function useTransactions(uid: string | undefined) {
 
     if (input.type !== undefined) updateData.type = input.type
     if (input.amount !== undefined) updateData.amount = input.amount
-    if (input.category !== undefined) updateData.category = input.category
+    if (input.categoryId !== undefined) updateData.categoryId = input.categoryId
+    if (input.categoryPath !== undefined) updateData.categoryPath = input.categoryPath
     if (input.description !== undefined) updateData.description = input.description
     if (input.date !== undefined) updateData.date = Timestamp.fromDate(input.date)
 
@@ -108,7 +113,9 @@ export function useTransactions(uid: string | undefined) {
 
     const categoryMap: Record<string, number> = {}
     filtered.forEach(t => {
-      categoryMap[t.category] = (categoryMap[t.category] || 0) + t.amount
+      // 使用大類作為統計
+      const mainCategory = t.categoryPath[0] || '其他'
+      categoryMap[mainCategory] = (categoryMap[mainCategory] || 0) + t.amount
     })
 
     return Object.entries(categoryMap).map(([name, value]) => ({ name, value }))

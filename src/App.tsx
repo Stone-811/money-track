@@ -2,20 +2,53 @@ import { useState, useMemo } from 'react'
 import { useAuth } from './hooks/useAuth'
 import { useTransactions } from './hooks/useTransactions'
 import { useBudget } from './hooks/useBudget'
-import { Layout } from './components/Layout'
+import { useCategories } from './hooks/useCategories'
+import { useSubscriptions } from './hooks/useSubscriptions'
+import { Layout, TabId } from './components/Layout'
 import { TransactionForm } from './components/TransactionForm'
 import { TransactionList } from './components/TransactionList'
 import { CategoryPieChart } from './components/CategoryPieChart'
 import { MonthlyBarChart } from './components/MonthlyBarChart'
 import { BudgetTracker } from './components/BudgetTracker'
+import { CalendarView } from './components/CalendarView'
+import { CategoryManager } from './components/CategoryManager'
+import { SubscriptionManager } from './components/SubscriptionManager'
+import { SubscriptionReminder } from './components/SubscriptionReminder'
 import { Transaction, TransactionInput } from './types'
 
 function App() {
   const { uid, loading: authLoading } = useAuth()
-  const { transactions, loading: transLoading, addTransaction, updateTransaction, deleteTransaction, getCategoryStats, getMonthlyStats } = useTransactions(uid)
+  const {
+    transactions,
+    loading: transLoading,
+    addTransaction,
+    updateTransaction,
+    deleteTransaction,
+    getCategoryStats,
+    getMonthlyStats
+  } = useTransactions(uid)
   const { setBudget, getBudgetForMonth } = useBudget(uid)
+  const {
+    categories,
+    loading: catLoading,
+    addCategory,
+    updateCategory,
+    deleteCategory,
+    buildTree,
+    getCategoryPath,
+    getChildren
+  } = useCategories(uid)
+  const {
+    subscriptions,
+    pendingReminders,
+    addSubscription,
+    updateSubscription,
+    deleteSubscription,
+    confirmReminder,
+    skipReminder
+  } = useSubscriptions(uid, addTransaction)
 
-  const [activeTab, setActiveTab] = useState<'record' | 'stats' | 'budget'>('record')
+  const [activeTab, setActiveTab] = useState<TabId>('record')
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null)
 
   // 當前月份
@@ -52,7 +85,7 @@ function App() {
   }
 
   // Loading 狀態
-  if (authLoading || transLoading) {
+  if (authLoading || transLoading || catLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -65,6 +98,17 @@ function App() {
 
   return (
     <Layout activeTab={activeTab} onTabChange={setActiveTab}>
+      {/* 訂閱提醒 */}
+      {pendingReminders.length > 0 && activeTab === 'record' && (
+        <div className="mb-4">
+          <SubscriptionReminder
+            pendingReminders={pendingReminders}
+            onConfirm={confirmReminder}
+            onSkip={skipReminder}
+          />
+        </div>
+      )}
+
       {/* 記帳頁面 */}
       {activeTab === 'record' && (
         <div className="space-y-4">
@@ -95,8 +139,14 @@ function App() {
           {/* 表單 */}
           <TransactionForm
             onSubmit={handleSubmit}
-            initialValues={editingTransaction || undefined}
+            initialValues={editingTransaction ? {
+              ...editingTransaction,
+              type: editingTransaction.type
+            } : undefined}
             onCancel={editingTransaction ? () => setEditingTransaction(null) : undefined}
+            categories={categories}
+            getChildren={getChildren}
+            getCategoryPath={getCategoryPath}
           />
 
           {/* 交易列表 */}
@@ -114,44 +164,54 @@ function App() {
         </div>
       )}
 
+      {/* 日曆頁面 */}
+      {activeTab === 'calendar' && (
+        <CalendarView
+          transactions={transactions}
+          subscriptions={subscriptions}
+          onDeleteTransaction={deleteTransaction}
+        />
+      )}
+
       {/* 統計頁面 */}
       {activeTab === 'stats' && (
         <div className="space-y-4">
           <CategoryPieChart data={categoryStats} />
           <MonthlyBarChart transactions={transactions} />
-        </div>
-      )}
 
-      {/* 預算頁面 */}
-      {activeTab === 'budget' && (
-        <div className="space-y-4">
+          {/* 預算追蹤 */}
           <BudgetTracker
             currentMonth={currentMonth}
             budget={currentBudget}
             spent={monthlyStats.expense}
             onSetBudget={handleSetBudget}
           />
+        </div>
+      )}
 
-          {/* 本月支出明細 */}
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h3 className="text-lg font-semibold mb-4">分類支出明細</h3>
-            {categoryStats.length > 0 ? (
-              <div className="space-y-3">
-                {categoryStats.sort((a, b) => b.value - a.value).map((cat) => (
-                  <div key={cat.name} className="flex items-center justify-between">
-                    <span className="text-gray-700">{cat.name}</span>
-                    <span className="font-medium text-red-600">
-                      ${cat.value.toLocaleString()}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center text-gray-500 py-4">
-                本月尚無支出
-              </div>
-            )}
-          </div>
+      {/* 訂閱頁面 */}
+      {activeTab === 'subscription' && (
+        <SubscriptionManager
+          subscriptions={subscriptions}
+          categories={categories}
+          addSubscription={addSubscription}
+          updateSubscription={updateSubscription}
+          deleteSubscription={deleteSubscription}
+          getChildren={getChildren}
+          getCategoryPath={getCategoryPath}
+        />
+      )}
+
+      {/* 設定頁面 */}
+      {activeTab === 'settings' && (
+        <div className="space-y-4">
+          <CategoryManager
+            categories={categories}
+            buildTree={buildTree}
+            addCategory={addCategory}
+            updateCategory={updateCategory}
+            deleteCategory={deleteCategory}
+          />
         </div>
       )}
     </Layout>

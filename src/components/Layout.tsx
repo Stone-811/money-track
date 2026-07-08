@@ -1,16 +1,20 @@
 import { ReactNode } from 'react'
 
+export type TabId = 'record' | 'calendar' | 'stats' | 'subscription' | 'settings'
+
 interface LayoutProps {
   children: ReactNode
-  activeTab: 'record' | 'stats' | 'budget'
-  onTabChange: (tab: 'record' | 'stats' | 'budget') => void
+  activeTab: TabId
+  onTabChange: (tab: TabId) => void
 }
 
 export function Layout({ children, activeTab, onTabChange }: LayoutProps) {
   const tabs = [
     { id: 'record' as const, label: '記帳', icon: '📝' },
+    { id: 'calendar' as const, label: '日曆', icon: '📅' },
     { id: 'stats' as const, label: '統計', icon: '📊' },
-    { id: 'budget' as const, label: '預算', icon: '💰' },
+    { id: 'subscription' as const, label: '訂閱', icon: '🔄' },
+    { id: 'settings' as const, label: '設定', icon: '⚙️' },
   ]
 
   return (
@@ -42,7 +46,7 @@ export function Layout({ children, activeTab, onTabChange }: LayoutProps) {
                   : 'text-gray-500 hover:text-gray-700'
               }`}
             >
-              <div className="text-xl mb-1">{tab.icon}</div>
+              <div className="text-lg mb-0.5">{tab.icon}</div>
               <div className="text-xs font-medium">{tab.label}</div>
             </button>
           ))}

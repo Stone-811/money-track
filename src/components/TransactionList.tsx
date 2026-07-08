@@ -42,11 +42,12 @@ export function TransactionList({ transactions, onEdit, onDelete }: TransactionL
                 </div>
                 <div>
                   <div className="font-medium text-gray-900">
-                    {transaction.category}
+                    {transaction.categoryPath?.join(' > ') || '未分類'}
                   </div>
                   <div className="text-sm text-gray-500">
                     {formatDate(transaction.date)}
                     {transaction.description && ` · ${transaction.description}`}
+                    {transaction.subscriptionId && ' · 🔄'}
                   </div>
                 </div>
               </div>
