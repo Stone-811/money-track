@@ -47,7 +47,10 @@ export function useBudget(uid: string | undefined) {
     const docData: BudgetDoc = {
       month: input.month,
       amount: input.amount,
-      categories: input.categories
+    }
+    // 只有當 categories 存在時才加入
+    if (input.categories) {
+      docData.categories = input.categories
     }
     await setDoc(docRef, docData)
   }, [uid])
