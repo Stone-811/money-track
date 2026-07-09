@@ -40,16 +40,19 @@ export function CalendarView({
       dayNum: number | null
       income: number
       expense: number
+      pendingSubscriptionAmount: number
       hasSubscription: boolean
       transactions: Transaction[]
     }> = []
 
     // 填充前面的空白
     for (let i = 0; i < startDay; i++) {
-      days.push({ date: null, dayNum: null, income: 0, expense: 0, hasSubscription: false, transactions: [] })
+      days.push({ date: null, dayNum: null, income: 0, expense: 0, pendingSubscriptionAmount: 0, hasSubscription: false, transactions: [] })
     }
 
     // 填充日期
+    const currentMonth = `${year}-${String(month + 1).padStart(2, '0')}`
+
     for (let d = 1; d <= lastDay.getDate(); d++) {
       const date = new Date(year, month, d)
       const dayTransactions = transactions.filter(t => {
@@ -63,17 +66,28 @@ export function CalendarView({
         .filter(t => t.type === 'income')
         .reduce((sum, t) => sum + t.amount, 0)
 
-      const expense = dayTransactions
+      let expense = dayTransactions
         .filter(t => t.type === 'expense')
         .reduce((sum, t) => sum + t.amount, 0)
 
-      const hasSubscription = subscriptions.some(s => s.isActive && s.billingDay === d)
+      // 檢查是否有未處理的訂閱（即將扣款）
+      const daySubscriptions = subscriptions.filter(s =>
+        s.isActive &&
+        s.billingDay === d &&
+        s.lastProcessedMonth !== currentMonth
+      )
+
+      // 計算未處理訂閱的預期金額
+      const pendingSubscriptionAmount = daySubscriptions.reduce((sum, s) => sum + s.amount, 0)
+
+      const hasSubscription = daySubscriptions.length > 0
 
       days.push({
         date,
         dayNum: d,
         income,
         expense,
+        pendingSubscriptionAmount,
         hasSubscription,
         transactions: dayTransactions
       })
@@ -241,6 +255,11 @@ export function CalendarView({
                       {day.expense > 0 && (
                         <span className="text-[10px] text-red-500 font-medium leading-tight">
                           -{formatAmount(day.expense)}
+                        </span>
+                      )}
+                      {day.pendingSubscriptionAmount > 0 && (
+                        <span className="text-[10px] text-orange-400 font-medium leading-tight">
+                          ({formatAmount(day.pendingSubscriptionAmount)})
                         </span>
                       )}
                       {day.income > 0 && (

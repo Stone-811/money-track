@@ -95,8 +95,9 @@ export function DayDetail({
     .filter(t => t.type === 'expense')
     .reduce((sum, t) => sum + t.amount, 0)
 
-  const handleDelete = (e: React.MouseEvent, id: string) => {
+  const handleDelete = (e: React.MouseEvent | React.TouchEvent, id: string) => {
     e.stopPropagation()
+    e.preventDefault()
     if (window.confirm('確定要刪除這筆記錄嗎？')) {
       onDelete(id)
     }
@@ -403,12 +404,12 @@ export function DayDetail({
                       </span>
                     </div>
 
-                    {/* 刪除按鈕 */}
+                    {/* 刪除按鈕 - 加大觸控區域 */}
                     <button
                       onClick={(e) => handleDelete(e, t.id)}
-                      className="p-2 text-gray-300 hover:text-red-500 transition-colors"
+                      className="p-3 -m-1 text-gray-400 hover:text-red-500 active:text-red-600 active:bg-red-50 rounded-xl transition-colors touch-manipulation"
                     >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                       </svg>
                     </button>
