@@ -103,15 +103,34 @@ export function CalendarView({
            date.getDate() === today.getDate()
   }
 
+  // 計算選中日期的交易（支援跨月份查看）
   const selectedDayData = useMemo(() => {
     if (!selectedDate) return null
-    return calendarData.find(d =>
-      d.date &&
-      d.date.getFullYear() === selectedDate.getFullYear() &&
-      d.date.getMonth() === selectedDate.getMonth() &&
-      d.date.getDate() === selectedDate.getDate()
-    )
-  }, [selectedDate, calendarData])
+
+    const dayTransactions = transactions.filter(t => {
+      const tDate = t.date
+      return tDate.getFullYear() === selectedDate.getFullYear() &&
+             tDate.getMonth() === selectedDate.getMonth() &&
+             tDate.getDate() === selectedDate.getDate()
+    })
+
+    return {
+      date: selectedDate,
+      dayNum: selectedDate.getDate(),
+      transactions: dayTransactions,
+      income: dayTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0),
+      expense: dayTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0)
+    }
+  }, [selectedDate, transactions])
+
+  // 處理日期切換（來自 DayDetail 的左右滑動或按鈕）
+  const handleDateChange = (newDate: Date) => {
+    setSelectedDate(newDate)
+    // 如果切換到不同月份，同步更新日曆視圖
+    if (newDate.getFullYear() !== year || newDate.getMonth() !== month) {
+      setCurrentDate(newDate)
+    }
+  }
 
   // 格式化金額（簡短顯示）
   const formatAmount = (amount: number) => {
@@ -270,6 +289,7 @@ export function CalendarView({
           onUpdate={onUpdateTransaction}
           getChildren={getChildren}
           getCategoryPath={getCategoryPath}
+          onDateChange={handleDateChange}
         />
       )}
     </div>

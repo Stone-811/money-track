@@ -45,7 +45,7 @@ function App() {
     deleteSubscription,
     confirmReminder,
     skipReminder
-  } = useSubscriptions(uid, addTransaction)
+  } = useSubscriptions(uid, addTransaction, transactions)
 
   const [activeTab, setActiveTab] = useState<TabId>('calendar')
 

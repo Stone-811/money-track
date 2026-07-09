@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Transaction, TransactionInput, TransactionType, Category } from '../types'
 import { CategoryPicker } from './CategoryPicker'
 
@@ -12,6 +12,7 @@ interface DayDetailProps {
   onUpdate: (id: string, input: Partial<TransactionInput>) => Promise<void>
   getChildren: (parentId: string | null, type: TransactionType) => Category[]
   getCategoryPath: (categoryId: string) => string[]
+  onDateChange?: (date: Date) => void
 }
 
 export function DayDetail({
@@ -23,7 +24,8 @@ export function DayDetail({
   onAdd,
   onUpdate,
   getChildren,
-  getCategoryPath
+  getCategoryPath,
+  onDateChange
 }: DayDetailProps) {
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -33,6 +35,38 @@ export function DayDetail({
   const [categoryPath, setCategoryPath] = useState<string[]>([])
   const [description, setDescription] = useState('')
   const [submitting, setSubmitting] = useState(false)
+
+  // 滑動相關
+  const touchStartX = useRef<number>(0)
+  const touchEndX = useRef<number>(0)
+  const contentRef = useRef<HTMLDivElement>(null)
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.touches[0].clientX
+  }
+
+  const handleTouchEnd = () => {
+    if (!onDateChange) return
+
+    const diff = touchStartX.current - touchEndX.current
+    const minSwipeDistance = 50
+
+    if (Math.abs(diff) > minSwipeDistance) {
+      const newDate = new Date(date)
+      if (diff > 0) {
+        // 向左滑 -> 下一天
+        newDate.setDate(newDate.getDate() + 1)
+      } else {
+        // 向右滑 -> 上一天
+        newDate.setDate(newDate.getDate() - 1)
+      }
+      onDateChange(newDate)
+    }
+  }
 
   useEffect(() => {
     if (editingId) {
@@ -119,8 +153,12 @@ export function DayDetail({
   return (
     <div className="fixed inset-0 bg-black/60 flex items-end justify-center z-50" onClick={onClose}>
       <div
+        ref={contentRef}
         className="bg-gray-50 rounded-t-3xl w-full max-w-lg max-h-[90vh] overflow-hidden animate-slide-up"
         onClick={e => e.stopPropagation()}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
       >
         {/* 拖曳指示條 */}
         <div className="flex justify-center pt-3 pb-2">
@@ -130,15 +168,49 @@ export function DayDetail({
         {/* 標題與摘要 */}
         <div className="px-5 pb-4">
           <div className="flex items-center justify-between mb-4">
+            {/* 上一天 */}
+            {onDateChange && (
+              <button
+                onClick={() => {
+                  const newDate = new Date(date)
+                  newDate.setDate(newDate.getDate() - 1)
+                  onDateChange(newDate)
+                }}
+                className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
+              >
+                <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+            )}
+
             <h3 className="text-xl font-bold text-gray-800">{formatDate(date)}</h3>
-            <button
-              onClick={onClose}
-              className="w-8 h-8 flex items-center justify-center bg-gray-200 hover:bg-gray-300 rounded-full transition-colors"
-            >
-              <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+
+            <div className="flex items-center gap-2">
+              {/* 下一天 */}
+              {onDateChange && (
+                <button
+                  onClick={() => {
+                    const newDate = new Date(date)
+                    newDate.setDate(newDate.getDate() + 1)
+                    onDateChange(newDate)
+                  }}
+                  className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
+                >
+                  <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              )}
+              <button
+                onClick={onClose}
+                className="w-8 h-8 flex items-center justify-center bg-gray-200 hover:bg-gray-300 rounded-full transition-colors"
+              >
+                <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
           </div>
 
           {/* 摘要卡片 */}

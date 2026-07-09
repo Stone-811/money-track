@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   collection,
   query,
@@ -11,11 +11,12 @@ import {
   Timestamp
 } from 'firebase/firestore'
 import { db } from '../lib/firebase'
-import { Subscription, SubscriptionInput, SubscriptionDoc, TransactionInput } from '../types'
+import { Subscription, SubscriptionInput, SubscriptionDoc, TransactionInput, Transaction } from '../types'
 
 export function useSubscriptions(
   uid: string | undefined,
-  addTransaction: (input: TransactionInput) => Promise<void>
+  addTransaction: (input: TransactionInput) => Promise<void>,
+  transactions?: Transaction[]
 ) {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
   const [loading, setLoading] = useState(true)
@@ -53,6 +54,9 @@ export function useSubscriptions(
     return () => unsubscribe()
   }, [uid])
 
+  // 追蹤已處理的訂閱，避免重複執行
+  const processingRef = useRef<Set<string>>(new Set())
+
   // 處理自動記帳和提醒
   useEffect(() => {
     if (!uid || subscriptions.length === 0) return
@@ -69,7 +73,29 @@ export function useSubscriptions(
         if (sub.lastProcessedMonth === currentMonth) continue
         if (sub.billingDay > today) continue
 
+        // 檢查是否正在處理中，避免重複
+        const processingKey = `${sub.id}-${currentMonth}`
+        if (processingRef.current.has(processingKey)) continue
+
+        // 檢查是否已經有該月份的交易記錄
+        if (transactions) {
+          const existingTransaction = transactions.find(t =>
+            t.subscriptionId === sub.id &&
+            t.date.getFullYear() === now.getFullYear() &&
+            t.date.getMonth() === now.getMonth()
+          )
+          if (existingTransaction) {
+            // 已有交易但 lastProcessedMonth 未更新，修正它
+            const docRef = doc(db, 'users', uid, 'subscriptions', sub.id)
+            await updateDoc(docRef, { lastProcessedMonth: currentMonth })
+            continue
+          }
+        }
+
         if (sub.mode === 'auto') {
+          // 標記為處理中
+          processingRef.current.add(processingKey)
+
           // 自動記帳
           await addTransaction({
             type: 'expense',
@@ -94,7 +120,7 @@ export function useSubscriptions(
     }
 
     processSubscriptions()
-  }, [uid, subscriptions, addTransaction])
+  }, [uid, subscriptions, addTransaction, transactions])
 
   // 新增訂閱
   const addSubscription = useCallback(async (input: SubscriptionInput) => {
