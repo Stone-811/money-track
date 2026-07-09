@@ -55,8 +55,28 @@ function App() {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
   }, [])
 
-  // 本月統計
-  const monthlyStats = useMemo(() => getMonthlyStats(currentMonth), [getMonthlyStats, currentMonth])
+  // 計算未處理訂閱金額
+  const pendingSubscriptionAmount = useMemo(() => {
+    const now = new Date()
+    const today = now.getDate()
+    return subscriptions
+      .filter(s =>
+        s.isActive &&
+        s.billingDay <= today &&
+        s.lastProcessedMonth !== currentMonth
+      )
+      .reduce((sum, s) => sum + s.amount, 0)
+  }, [subscriptions, currentMonth])
+
+  // 本月統計（包含未處理訂閱）
+  const monthlyStats = useMemo(() => {
+    const stats = getMonthlyStats(currentMonth)
+    return {
+      ...stats,
+      expense: stats.expense + pendingSubscriptionAmount,
+      balance: stats.income - (stats.expense + pendingSubscriptionAmount)
+    }
+  }, [getMonthlyStats, currentMonth, pendingSubscriptionAmount])
   const categoryStats = useMemo(() => getCategoryStats(currentMonth), [getCategoryStats, currentMonth])
   const currentBudget = useMemo(() => getBudgetForMonth(currentMonth), [getBudgetForMonth, currentMonth])
 
