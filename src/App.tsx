@@ -90,6 +90,16 @@ function App() {
       {/* 日曆頁面 */}
       {activeTab === 'calendar' && (
         <>
+          {/* 預算追蹤 */}
+          <div className="mb-4">
+            <BudgetTracker
+              currentMonth={currentMonth}
+              budget={currentBudget}
+              spent={monthlyStats.expense}
+              onSetBudget={handleSetBudget}
+            />
+          </div>
+
           {pendingReminders.length > 0 && (
             <div className="mb-4">
               <SubscriptionReminder
@@ -136,14 +146,6 @@ function App() {
       {/* 設定頁面 */}
       {activeTab === 'settings' && (
         <div className="space-y-4">
-          {/* 預算設定 */}
-          <BudgetTracker
-            currentMonth={currentMonth}
-            budget={currentBudget}
-            spent={monthlyStats.expense}
-            onSetBudget={handleSetBudget}
-          />
-
           {/* 分類管理 */}
           <CategoryManager
             categories={categories}

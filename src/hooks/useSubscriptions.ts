@@ -119,7 +119,16 @@ export function useSubscriptions(
     if (!uid) return
 
     const docRef = doc(db, 'users', uid, 'subscriptions', id)
-    await updateDoc(docRef, input)
+    // 過濾掉 undefined 值，避免 Firestore 錯誤
+    const updateData: Record<string, any> = {}
+    Object.entries(input).forEach(([key, value]) => {
+      if (value !== undefined) {
+        updateData[key] = value
+      }
+    })
+    if (Object.keys(updateData).length > 0) {
+      await updateDoc(docRef, updateData)
+    }
   }, [uid])
 
   // 刪除訂閱

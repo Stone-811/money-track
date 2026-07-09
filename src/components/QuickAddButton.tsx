@@ -104,12 +104,51 @@ export function QuickAddButton({
       setAmount(numberMatch[1])
     }
 
-    // 移除數字和常見金額相關詞彙，保留有意義的備註
-    const cleanText = text
+    // 嘗試匹配分類名稱（先嘗試中類，再嘗試大類）
+    const expenseCategories = categories.filter(c => c.type === 'expense')
+    let matchedCategory: Category | null = null
+    let matchedCategoryName = ''
+
+    // 先嘗試匹配中類（子分類），因為通常更具體
+    const subCategories = expenseCategories.filter(c => c.level === 2)
+    for (const cat of subCategories) {
+      if (text.includes(cat.name)) {
+        matchedCategory = cat
+        matchedCategoryName = cat.name
+        break
+      }
+    }
+
+    // 如果沒有匹配中類，嘗試匹配大類
+    if (!matchedCategory) {
+      const mainCategories = expenseCategories.filter(c => c.level === 1)
+      for (const cat of mainCategories) {
+        if (text.includes(cat.name)) {
+          matchedCategory = cat
+          matchedCategoryName = cat.name
+          break
+        }
+      }
+    }
+
+    // 如果匹配到分類，自動選擇
+    if (matchedCategory) {
+      setCategoryId(matchedCategory.id)
+      setCategoryPath(getCategoryPath(matchedCategory.id))
+    }
+
+    // 移除數字、金額單位、常見詞彙和分類名稱，保留有意義的備註
+    let cleanText = text
       .replace(/\d+/g, '')           // 移除數字
       .replace(/[元塊錢块圓]*/g, '') // 移除金額單位
       .replace(/花了|花|共|總共|一共/g, '') // 移除常見動詞
-      .trim()
+
+    // 如果有匹配到分類，也從備註中移除分類名稱
+    if (matchedCategoryName) {
+      cleanText = cleanText.replace(matchedCategoryName, '')
+    }
+
+    cleanText = cleanText.trim()
 
     if (cleanText) {
       setDescription(cleanText)
@@ -209,7 +248,7 @@ export function QuickAddButton({
                     <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
                     <span className="font-medium">正在聆聽...</span>
                   </div>
-                  <p className="text-sm text-red-500 mt-1">請說出金額，例如：「午餐 120 元」</p>
+                  <p className="text-sm text-red-500 mt-1">說出分類和金額，例如：「午餐 120 元」</p>
                 </div>
               )}
 
