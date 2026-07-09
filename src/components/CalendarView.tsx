@@ -51,8 +51,6 @@ export function CalendarView({
     }
 
     // 填充日期
-    const currentMonth = `${year}-${String(month + 1).padStart(2, '0')}`
-
     for (let d = 1; d <= lastDay.getDate(); d++) {
       const date = new Date(year, month, d)
       const dayTransactions = transactions.filter(t => {
@@ -70,15 +68,20 @@ export function CalendarView({
         .filter(t => t.type === 'expense')
         .reduce((sum, t) => sum + t.amount, 0)
 
-      // 檢查是否有未處理的訂閱（即將扣款）
+      // 檢查該日是否有訂閱
       const daySubscriptions = subscriptions.filter(s =>
         s.isActive &&
-        s.billingDay === d &&
-        s.lastProcessedMonth !== currentMonth
+        s.billingDay === d
       )
 
-      // 計算未處理訂閱的預期金額
-      const pendingSubscriptionAmount = daySubscriptions.reduce((sum, s) => sum + s.amount, 0)
+      // 計算尚未有交易記錄的訂閱金額
+      const pendingSubscriptionAmount = daySubscriptions
+        .filter(s => {
+          // 檢查是否已有該訂閱的交易
+          const hasTransaction = dayTransactions.some(t => t.subscriptionId === s.id)
+          return !hasTransaction
+        })
+        .reduce((sum, s) => sum + s.amount, 0)
 
       const hasSubscription = daySubscriptions.length > 0
 
