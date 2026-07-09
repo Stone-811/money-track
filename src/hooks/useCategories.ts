@@ -131,8 +131,11 @@ export function useCategories(uid: string | undefined) {
       type: input.type,
       parentId: input.parentId,
       level: input.level,
-      icon: input.icon,
       order: input.order
+    }
+    // 只有當 icon 存在時才加入
+    if (input.icon) {
+      docData.icon = input.icon
     }
     await addDoc(categoriesRef, docData)
   }, [uid])
@@ -142,7 +145,16 @@ export function useCategories(uid: string | undefined) {
     if (!uid) return
 
     const docRef = doc(db, 'users', uid, 'categories', id)
-    await updateDoc(docRef, input)
+    // 過濾掉 undefined 值
+    const updateData: Record<string, any> = {}
+    Object.entries(input).forEach(([key, value]) => {
+      if (value !== undefined) {
+        updateData[key] = value
+      }
+    })
+    if (Object.keys(updateData).length > 0) {
+      await updateDoc(docRef, updateData)
+    }
   }, [uid])
 
   // 刪除分類（包含子分類）
