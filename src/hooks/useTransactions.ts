@@ -60,7 +60,10 @@ export function useTransactions(uid: string | undefined) {
       description: input.description,
       date: Timestamp.fromDate(input.date),
       createdAt: Timestamp.now(),
-      subscriptionId: input.subscriptionId
+    }
+    // 只有當 subscriptionId 存在時才加入
+    if (input.subscriptionId) {
+      docData.subscriptionId = input.subscriptionId
     }
     await addDoc(transactionsRef, docData)
   }, [uid])
