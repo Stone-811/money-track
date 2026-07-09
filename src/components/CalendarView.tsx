@@ -221,7 +221,7 @@ export function CalendarView({
               selectedDate.getDate() === day.date.getDate() &&
               selectedDate.getMonth() === day.date.getMonth()
             const dayIsToday = isToday(day.date)
-            const hasData = day.income > 0 || day.expense > 0
+            const hasData = day.income > 0 || day.expense > 0 || day.pendingSubscriptionAmount > 0
             const weekDay = index % 7
 
             return (
@@ -252,14 +252,9 @@ export function CalendarView({
 
                     {/* 金額顯示 */}
                     <div className="flex flex-col items-center mt-0.5 w-full px-0.5">
-                      {day.expense > 0 && (
+                      {(day.expense + day.pendingSubscriptionAmount) > 0 && (
                         <span className="text-[10px] text-red-500 font-medium leading-tight">
-                          -{formatAmount(day.expense)}
-                        </span>
-                      )}
-                      {day.pendingSubscriptionAmount > 0 && (
-                        <span className="text-[10px] text-orange-400 font-medium leading-tight">
-                          ({formatAmount(day.pendingSubscriptionAmount)})
+                          -{formatAmount(day.expense + day.pendingSubscriptionAmount)}
                         </span>
                       )}
                       {day.income > 0 && (
