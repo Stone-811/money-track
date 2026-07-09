@@ -8,6 +8,7 @@ interface CalendarViewProps {
   categories: Category[]
   onDeleteTransaction: (id: string) => void
   onAddTransaction: (input: TransactionInput) => Promise<void>
+  onUpdateTransaction: (id: string, input: Partial<TransactionInput>) => Promise<void>
   getChildren: (parentId: string | null, type: TransactionType) => Category[]
   getCategoryPath: (categoryId: string) => string[]
 }
@@ -18,6 +19,7 @@ export function CalendarView({
   categories,
   onDeleteTransaction,
   onAddTransaction,
+  onUpdateTransaction,
   getChildren,
   getCategoryPath
 }: CalendarViewProps) {
@@ -247,6 +249,7 @@ export function CalendarView({
           onClose={() => setSelectedDate(null)}
           onDelete={onDeleteTransaction}
           onAdd={onAddTransaction}
+          onUpdate={onUpdateTransaction}
           getChildren={getChildren}
           getCategoryPath={getCategoryPath}
         />

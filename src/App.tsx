@@ -19,6 +19,7 @@ function App() {
   const {
     transactions,
     addTransaction,
+    updateTransaction,
     deleteTransaction,
     getCategoryStats,
     getMonthlyStats
@@ -103,6 +104,7 @@ function App() {
             categories={categories}
             onDeleteTransaction={deleteTransaction}
             onAddTransaction={addTransaction}
+            onUpdateTransaction={updateTransaction}
             getChildren={getChildren}
             getCategoryPath={getCategoryPath}
           />

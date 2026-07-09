@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Transaction, TransactionInput, TransactionType, Category } from '../types'
 import { CategoryPicker } from './CategoryPicker'
 
@@ -9,6 +9,7 @@ interface DayDetailProps {
   onClose: () => void
   onDelete: (id: string) => void
   onAdd: (input: TransactionInput) => Promise<void>
+  onUpdate: (id: string, input: Partial<TransactionInput>) => Promise<void>
   getChildren: (parentId: string | null, type: TransactionType) => Category[]
   getCategoryPath: (categoryId: string) => string[]
 }
@@ -20,16 +21,33 @@ export function DayDetail({
   onClose,
   onDelete,
   onAdd,
+  onUpdate,
   getChildren,
   getCategoryPath
 }: DayDetailProps) {
   const [showForm, setShowForm] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [type, setType] = useState<TransactionType>('expense')
   const [amount, setAmount] = useState('')
   const [categoryId, setCategoryId] = useState('')
   const [categoryPath, setCategoryPath] = useState<string[]>([])
   const [description, setDescription] = useState('')
   const [submitting, setSubmitting] = useState(false)
+
+  // 當編輯模式改變時，重置表單
+  useEffect(() => {
+    if (editingId) {
+      const t = transactions.find(t => t.id === editingId)
+      if (t) {
+        setType(t.type)
+        setAmount(t.amount.toString())
+        setCategoryId(t.categoryId)
+        setCategoryPath(t.categoryPath)
+        setDescription(t.description)
+        setShowForm(true)
+      }
+    }
+  }, [editingId, transactions])
 
   const formatDate = (d: Date) => {
     const weekDays = ['日', '一', '二', '三', '四', '五', '六']
@@ -44,7 +62,8 @@ export function DayDetail({
     .filter(t => t.type === 'expense')
     .reduce((sum, t) => sum + t.amount, 0)
 
-  const handleDelete = (id: string) => {
+  const handleDelete = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation()
     if (window.confirm('確定要刪除這筆記錄嗎？')) {
       onDelete(id)
     }
@@ -55,25 +74,46 @@ export function DayDetail({
     setCategoryPath(path)
   }
 
+  const handleEdit = (t: Transaction) => {
+    setEditingId(t.id)
+  }
+
+  const resetForm = () => {
+    setShowForm(false)
+    setEditingId(null)
+    setAmount('')
+    setCategoryId('')
+    setCategoryPath([])
+    setDescription('')
+    setType('expense')
+  }
+
   const handleSubmit = async () => {
     if (!amount || !categoryId) return
 
     setSubmitting(true)
     try {
-      await onAdd({
-        type,
-        amount: parseFloat(amount),
-        categoryId,
-        categoryPath,
-        description,
-        date
-      })
-      // 重置表單
-      setAmount('')
-      setCategoryId('')
-      setCategoryPath([])
-      setDescription('')
-      setShowForm(false)
+      if (editingId) {
+        // 更新現有記錄
+        await onUpdate(editingId, {
+          type,
+          amount: parseFloat(amount),
+          categoryId,
+          categoryPath,
+          description
+        })
+      } else {
+        // 新增記錄
+        await onAdd({
+          type,
+          amount: parseFloat(amount),
+          categoryId,
+          categoryPath,
+          description,
+          date
+        })
+      }
+      resetForm()
     } finally {
       setSubmitting(false)
     }
@@ -118,7 +158,7 @@ export function DayDetail({
           {!showForm ? (
             <div className="p-4">
               <button
-                onClick={() => setShowForm(true)}
+                onClick={() => { resetForm(); setShowForm(true) }}
                 className="w-full py-3 bg-blue-500 text-white rounded-xl font-medium hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -129,6 +169,13 @@ export function DayDetail({
             </div>
           ) : (
             <div className="p-4 bg-blue-50 border-b">
+              {/* 編輯模式標題 */}
+              {editingId && (
+                <div className="mb-3 text-center">
+                  <span className="text-sm text-blue-600 font-medium">編輯記錄</span>
+                </div>
+              )}
+
               {/* 類型切換 */}
               <div className="flex gap-2 mb-4">
                 <button
@@ -198,16 +245,10 @@ export function DayDetail({
                   disabled={submitting || !amount || !categoryId}
                   className="flex-1 py-3 bg-blue-500 text-white rounded-xl font-medium hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  {submitting ? '儲存中...' : '確定'}
+                  {submitting ? '儲存中...' : editingId ? '更新' : '確定'}
                 </button>
                 <button
-                  onClick={() => {
-                    setShowForm(false)
-                    setAmount('')
-                    setCategoryId('')
-                    setCategoryPath([])
-                    setDescription('')
-                  }}
+                  onClick={resetForm}
                   className="px-6 py-3 bg-white text-gray-600 rounded-xl font-medium hover:bg-gray-100 transition-colors"
                 >
                   取消
@@ -225,7 +266,13 @@ export function DayDetail({
             ) : transactions.length > 0 && (
               <div className="divide-y">
                 {transactions.map((t) => (
-                  <div key={t.id} className="px-4 py-3 flex items-center justify-between">
+                  <div
+                    key={t.id}
+                    onClick={() => handleEdit(t)}
+                    className={`px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors ${
+                      editingId === t.id ? 'bg-blue-50' : ''
+                    }`}
+                  >
                     <div className="flex items-center gap-3">
                       <div
                         className={`w-10 h-10 rounded-full flex items-center justify-center text-white ${
@@ -255,7 +302,7 @@ export function DayDetail({
                         {t.type === 'expense' ? '-' : '+'}${t.amount.toLocaleString()}
                       </span>
                       <button
-                        onClick={() => handleDelete(t.id)}
+                        onClick={(e) => handleDelete(e, t.id)}
                         className="p-1.5 text-gray-400 hover:text-red-500 transition-colors"
                         title="刪除"
                       >
