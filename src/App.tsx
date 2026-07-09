@@ -13,6 +13,7 @@ import { CategoryManager } from './components/CategoryManager'
 import { SubscriptionManager } from './components/SubscriptionManager'
 import { SubscriptionReminder } from './components/SubscriptionReminder'
 import { LoginScreen } from './components/LoginScreen'
+import { QuickAddButton } from './components/QuickAddButton'
 
 function App() {
   const { uid, loading: authLoading, signIn, signOut, error: authError } = useAuth()
@@ -114,7 +115,7 @@ function App() {
       {/* 統計頁面 */}
       {activeTab === 'stats' && (
         <div className="space-y-4">
-          <CategoryPieChart data={categoryStats} />
+          <CategoryPieChart data={categoryStats} transactions={transactions} />
           <MonthlyBarChart transactions={transactions} />
         </div>
       )}
@@ -178,6 +179,13 @@ function App() {
           </div>
         </div>
       )}
+      {/* 快速記帳按鈕 */}
+      <QuickAddButton
+        categories={categories}
+        onAdd={addTransaction}
+        getChildren={getChildren}
+        getCategoryPath={getCategoryPath}
+      />
     </Layout>
   )
 }
