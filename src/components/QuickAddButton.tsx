@@ -99,13 +99,18 @@ export function QuickAddButton({
   // 解析語音輸入
   const parseVoiceInput = (text: string) => {
     // 嘗試提取數字金額
-    const numberMatch = text.match(/(\d+)/);
+    const numberMatch = text.match(/(\d+)/)
     if (numberMatch) {
       setAmount(numberMatch[1])
     }
 
-    // 設定備註
-    const cleanText = text.replace(/\d+/g, '').trim()
+    // 移除數字和常見金額相關詞彙，保留有意義的備註
+    const cleanText = text
+      .replace(/\d+/g, '')           // 移除數字
+      .replace(/[元塊錢块圓]*/g, '') // 移除金額單位
+      .replace(/花了|花|共|總共|一共/g, '') // 移除常見動詞
+      .trim()
+
     if (cleanText) {
       setDescription(cleanText)
     }
