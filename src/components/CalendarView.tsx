@@ -33,7 +33,7 @@ export function CalendarView({
   const calendarData = useMemo(() => {
     const firstDay = new Date(year, month, 1)
     const lastDay = new Date(year, month + 1, 0)
-    const startDay = firstDay.getDay() // 0-6, 0 = Sunday
+    const startDay = firstDay.getDay()
 
     const days: Array<{
       date: Date | null
@@ -82,17 +82,16 @@ export function CalendarView({
     return days
   }, [year, month, transactions, subscriptions])
 
-  const goToPrevMonth = () => {
-    setCurrentDate(new Date(year, month - 1, 1))
-  }
+  // 月統計
+  const monthStats = useMemo(() => {
+    const income = calendarData.reduce((sum, d) => sum + d.income, 0)
+    const expense = calendarData.reduce((sum, d) => sum + d.expense, 0)
+    return { income, expense, balance: income - expense }
+  }, [calendarData])
 
-  const goToNextMonth = () => {
-    setCurrentDate(new Date(year, month + 1, 1))
-  }
-
-  const goToToday = () => {
-    setCurrentDate(new Date())
-  }
+  const goToPrevMonth = () => setCurrentDate(new Date(year, month - 1, 1))
+  const goToNextMonth = () => setCurrentDate(new Date(year, month + 1, 1))
+  const goToToday = () => setCurrentDate(new Date())
 
   const weekDays = ['日', '一', '二', '三', '四', '五', '六']
 
@@ -104,7 +103,6 @@ export function CalendarView({
            date.getDate() === today.getDate()
   }
 
-  // 取得當日交易
   const selectedDayData = useMemo(() => {
     if (!selectedDate) return null
     return calendarData.find(d =>
@@ -115,14 +113,22 @@ export function CalendarView({
     )
   }, [selectedDate, calendarData])
 
+  // 格式化金額（簡短顯示）
+  const formatAmount = (amount: number) => {
+    if (amount >= 10000) {
+      return `${(amount / 1000).toFixed(0)}k`
+    }
+    return amount.toLocaleString()
+  }
+
   return (
-    <div className="space-y-4">
-      {/* 月份切換 */}
-      <div className="bg-white rounded-lg shadow-md p-4">
-        <div className="flex items-center justify-between mb-4">
+    <div className="space-y-3">
+      {/* 月份摘要卡片 */}
+      <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl p-4 text-white shadow-lg">
+        <div className="flex items-center justify-between mb-3">
           <button
             onClick={goToPrevMonth}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-white/20 rounded-full transition-colors"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -130,16 +136,10 @@ export function CalendarView({
           </button>
           <div className="text-center">
             <h2 className="text-xl font-bold">{year}年{month + 1}月</h2>
-            <button
-              onClick={goToToday}
-              className="text-sm text-blue-500 hover:text-blue-600"
-            >
-              回到今天
-            </button>
           </div>
           <button
             onClick={goToNextMonth}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-white/20 rounded-full transition-colors"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -147,12 +147,32 @@ export function CalendarView({
           </button>
         </div>
 
+        <div className="grid grid-cols-3 gap-2 text-center">
+          <div className="bg-white/10 rounded-xl py-2 px-1">
+            <div className="text-xs opacity-80">收入</div>
+            <div className="text-lg font-bold">+{monthStats.income.toLocaleString()}</div>
+          </div>
+          <div className="bg-white/10 rounded-xl py-2 px-1">
+            <div className="text-xs opacity-80">支出</div>
+            <div className="text-lg font-bold">-{monthStats.expense.toLocaleString()}</div>
+          </div>
+          <div className="bg-white/10 rounded-xl py-2 px-1">
+            <div className="text-xs opacity-80">結餘</div>
+            <div className={`text-lg font-bold ${monthStats.balance < 0 ? 'text-red-300' : ''}`}>
+              {monthStats.balance >= 0 ? '+' : ''}{monthStats.balance.toLocaleString()}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 日曆 */}
+      <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
         {/* 星期標題 */}
-        <div className="grid grid-cols-7 gap-1 mb-2">
+        <div className="grid grid-cols-7 bg-gray-50 border-b">
           {weekDays.map((day, i) => (
             <div
               key={day}
-              className={`text-center text-sm font-medium py-2 ${
+              className={`text-center text-xs font-semibold py-3 ${
                 i === 0 ? 'text-red-500' : i === 6 ? 'text-blue-500' : 'text-gray-500'
               }`}
             >
@@ -162,81 +182,79 @@ export function CalendarView({
         </div>
 
         {/* 日曆格子 */}
-        <div className="grid grid-cols-7 gap-1">
-          {calendarData.map((day, index) => (
-            <button
-              key={index}
-              disabled={!day.date}
-              onClick={() => day.date && setSelectedDate(day.date)}
-              className={`
-                relative min-h-[70px] p-1 rounded-lg text-left transition-colors
-                ${!day.date ? 'bg-gray-50' : 'hover:bg-blue-50 cursor-pointer'}
-                ${isToday(day.date) ? 'ring-2 ring-blue-500' : ''}
-                ${selectedDate && day.date &&
-                  selectedDate.getDate() === day.date.getDate() &&
-                  selectedDate.getMonth() === day.date.getMonth()
-                  ? 'bg-blue-100'
-                  : 'bg-white'
-                }
-              `}
-            >
-              {day.dayNum && (
-                <>
-                  <div className="flex items-center justify-between">
-                    <span className={`text-sm font-medium ${
-                      isToday(day.date) ? 'text-blue-600' : 'text-gray-700'
-                    }`}>
-                      {day.dayNum}
-                    </span>
-                    {day.hasSubscription && (
-                      <span className="text-xs" title="有訂閱扣款">🔄</span>
-                    )}
-                  </div>
-                  <div className="mt-1 space-y-0.5">
-                    {day.income > 0 && (
-                      <div className="text-xs text-green-600 truncate">
-                        +${day.income.toLocaleString()}
-                      </div>
-                    )}
-                    {day.expense > 0 && (
-                      <div className="text-xs text-red-600 truncate">
-                        -${day.expense.toLocaleString()}
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
-            </button>
-          ))}
-        </div>
-      </div>
+        <div className="grid grid-cols-7">
+          {calendarData.map((day, index) => {
+            const isSelected = selectedDate && day.date &&
+              selectedDate.getDate() === day.date.getDate() &&
+              selectedDate.getMonth() === day.date.getMonth()
+            const dayIsToday = isToday(day.date)
+            const hasData = day.income > 0 || day.expense > 0
+            const weekDay = index % 7
 
-      {/* 月份摘要 */}
-      <div className="bg-white rounded-lg shadow-md p-4">
-        <h3 className="font-semibold mb-3">本月摘要</h3>
-        <div className="grid grid-cols-3 gap-4 text-center">
-          <div>
-            <div className="text-sm text-gray-500">收入</div>
-            <div className="text-lg font-semibold text-green-600">
-              ${calendarData.reduce((sum, d) => sum + d.income, 0).toLocaleString()}
-            </div>
-          </div>
-          <div>
-            <div className="text-sm text-gray-500">支出</div>
-            <div className="text-lg font-semibold text-red-600">
-              ${calendarData.reduce((sum, d) => sum + d.expense, 0).toLocaleString()}
-            </div>
-          </div>
-          <div>
-            <div className="text-sm text-gray-500">結餘</div>
-            <div className={`text-lg font-semibold ${
-              calendarData.reduce((sum, d) => sum + d.income - d.expense, 0) >= 0
-                ? 'text-blue-600'
-                : 'text-red-600'
-            }`}>
-              ${calendarData.reduce((sum, d) => sum + d.income - d.expense, 0).toLocaleString()}
-            </div>
-          </div>
+            return (
+              <button
+                key={index}
+                disabled={!day.date}
+                onClick={() => day.date && setSelectedDate(day.date)}
+                className={`
+                  relative h-16 flex flex-col items-center justify-start pt-1
+                  border-b border-r border-gray-100 transition-colors
+                  ${!day.date ? 'bg-gray-50/50' : 'hover:bg-blue-50 active:bg-blue-100'}
+                  ${isSelected ? 'bg-blue-50' : ''}
+                  ${weekDay === 6 ? 'border-r-0' : ''}
+                `}
+              >
+                {day.dayNum && (
+                  <>
+                    {/* 日期數字 */}
+                    <div className={`
+                      w-7 h-7 flex items-center justify-center rounded-full text-sm font-medium
+                      ${dayIsToday ? 'bg-blue-500 text-white' : ''}
+                      ${weekDay === 0 && !dayIsToday ? 'text-red-500' : ''}
+                      ${weekDay === 6 && !dayIsToday ? 'text-blue-500' : ''}
+                      ${!dayIsToday && weekDay !== 0 && weekDay !== 6 ? 'text-gray-700' : ''}
+                    `}>
+                      {day.dayNum}
+                    </div>
+
+                    {/* 金額顯示 */}
+                    <div className="flex flex-col items-center mt-0.5 w-full px-0.5">
+                      {day.expense > 0 && (
+                        <span className="text-[10px] text-red-500 font-medium leading-tight">
+                          -{formatAmount(day.expense)}
+                        </span>
+                      )}
+                      {day.income > 0 && (
+                        <span className="text-[10px] text-green-500 font-medium leading-tight">
+                          +{formatAmount(day.income)}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* 訂閱指示點 */}
+                    {day.hasSubscription && (
+                      <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-orange-400 rounded-full" />
+                    )}
+
+                    {/* 有資料指示點 */}
+                    {hasData && !day.hasSubscription && (
+                      <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-gray-300 rounded-full" />
+                    )}
+                  </>
+                )}
+              </button>
+            )
+          })}
+        </div>
+
+        {/* 今天按鈕 */}
+        <div className="border-t p-2 flex justify-center">
+          <button
+            onClick={goToToday}
+            className="text-sm text-blue-500 hover:text-blue-600 font-medium px-4 py-1 hover:bg-blue-50 rounded-full transition-colors"
+          >
+            回到今天
+          </button>
         </div>
       </div>
 
