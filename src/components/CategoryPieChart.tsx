@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react'
-import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
+import { useState, useMemo, useCallback } from 'react'
+import { PieChart, Pie, Cell, ResponsiveContainer, Sector } from 'recharts'
 import { Transaction } from '../types'
 
 interface CategoryPieChartProps {
@@ -12,8 +12,67 @@ const COLORS = [
   '#14b8a6', '#f43f5e', '#84cc16', '#6366f1'
 ]
 
+// 自定義標籤渲染
+const renderCustomLabel = ({
+  cx, cy, midAngle, outerRadius, percent, name
+}: any) => {
+  const RADIAN = Math.PI / 180
+  const radius = outerRadius + 25
+  const x = cx + radius * Math.cos(-midAngle * RADIAN)
+  const y = cy + radius * Math.sin(-midAngle * RADIAN)
+
+  // 只顯示佔比超過 5% 的標籤
+  if (percent < 0.05) return null
+
+  return (
+    <text
+      x={x}
+      y={y}
+      fill="currentColor"
+      textAnchor={x > cx ? 'start' : 'end'}
+      dominantBaseline="central"
+      className="text-xs fill-gray-700 dark:fill-gray-300"
+      style={{ fontSize: '11px' }}
+    >
+      {name} {(percent * 100).toFixed(0)}%
+    </text>
+  )
+}
+
+// 活躍扇形渲染（hover 效果）
+const renderActiveShape = (props: any) => {
+  const {
+    cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill,
+    payload, percent, value
+  } = props
+
+  return (
+    <g>
+      <Sector
+        cx={cx}
+        cy={cy}
+        innerRadius={innerRadius}
+        outerRadius={outerRadius + 6}
+        startAngle={startAngle}
+        endAngle={endAngle}
+        fill={fill}
+      />
+      <text x={cx} y={cy - 8} textAnchor="middle" className="text-sm font-bold fill-gray-800 dark:fill-gray-200">
+        {payload.name}
+      </text>
+      <text x={cx} y={cy + 10} textAnchor="middle" className="text-xs fill-gray-600 dark:fill-gray-400">
+        ${value.toLocaleString()}
+      </text>
+      <text x={cx} y={cy + 26} textAnchor="middle" className="text-xs fill-gray-500 dark:fill-gray-500">
+        {(percent * 100).toFixed(1)}%
+      </text>
+    </g>
+  )
+}
+
 export function CategoryPieChart({ transactions }: CategoryPieChartProps) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+  const [activeIndex, setActiveIndex] = useState<number | undefined>(undefined)
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date()
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
@@ -60,6 +119,14 @@ export function CategoryPieChart({ transactions }: CategoryPieChartProps) {
 
   const subcategoryData = selectedCategory ? getSubcategoryDetails(selectedCategory) : []
   const selectedTotal = subcategoryData.reduce((sum, item) => sum + item.value, 0)
+
+  const onPieEnter = useCallback((_: any, index: number) => {
+    setActiveIndex(index)
+  }, [])
+
+  const onPieLeave = useCallback(() => {
+    setActiveIndex(undefined)
+  }, [])
 
   // 月份導航
   const goToPrevMonth = () => {
@@ -159,17 +226,23 @@ export function CategoryPieChart({ transactions }: CategoryPieChartProps) {
 
       <div className="p-4">
         {/* 圖表 */}
-        <div className="h-48 mb-4">
+        <div className="h-64 mb-4">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
                 data={selectedCategory ? subcategoryData : data}
                 cx="50%"
                 cy="50%"
-                innerRadius={50}
-                outerRadius={75}
+                innerRadius={45}
+                outerRadius={70}
                 paddingAngle={2}
                 dataKey="value"
+                activeIndex={activeIndex}
+                activeShape={renderActiveShape}
+                onMouseEnter={onPieEnter}
+                onMouseLeave={onPieLeave}
+                label={renderCustomLabel}
+                labelLine={false}
                 onClick={(entry) => {
                   if (!selectedCategory) {
                     setSelectedCategory(entry.name)
