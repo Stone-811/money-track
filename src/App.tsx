@@ -58,6 +58,13 @@ function App() {
 
   const [activeTab, setActiveTab] = useState<TabId>('calendar')
 
+  // 切換分頁時關閉彈窗
+  const handleTabChange = (tab: TabId) => {
+    setShowCategoryManager(false)
+    setShowConfirmDialog(null)
+    setActiveTab(tab)
+  }
+
   // 當前月份
   const currentMonth = useMemo(() => {
     const now = new Date()
@@ -120,7 +127,7 @@ function App() {
   console.log('uid:', uid, 'categories:', categories.length)
 
   return (
-    <Layout activeTab={activeTab} onTabChange={setActiveTab} onRefresh={handleRefresh}>
+    <Layout activeTab={activeTab} onTabChange={handleTabChange} onRefresh={handleRefresh}>
       {/* 日曆頁面 */}
       {activeTab === 'calendar' && (
         <>
