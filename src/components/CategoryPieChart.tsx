@@ -186,7 +186,7 @@ export function CategoryPieChart({ transactions }: CategoryPieChartProps) {
         <div className="p-4 border-b dark:border-gray-700 flex items-center justify-between">
           <button
             onClick={goToPrevMonth}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors focus:outline-none"
           >
             <svg className="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -195,7 +195,7 @@ export function CategoryPieChart({ transactions }: CategoryPieChartProps) {
           <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100">{formatMonth(selectedMonth)}</h3>
           <button
             onClick={goToNextMonth}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors focus:outline-none"
           >
             <svg className="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -240,7 +240,7 @@ export function CategoryPieChart({ transactions }: CategoryPieChartProps) {
             {selectedSubcategory ? (
               <button
                 onClick={goBack}
-                className="flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                className="flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 focus:outline-none"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -252,7 +252,7 @@ export function CategoryPieChart({ transactions }: CategoryPieChartProps) {
             ) : selectedCategory ? (
               <button
                 onClick={goBack}
-                className="flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                className="flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 focus:outline-none"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -356,7 +356,7 @@ export function CategoryPieChart({ transactions }: CategoryPieChartProps) {
                         setSelectedCategory(item.name)
                       }
                     }}
-                    className="w-full flex items-center gap-3 p-3 rounded-xl transition-colors hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+                    className="w-full flex items-center gap-3 p-3 rounded-xl transition-colors hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer focus:outline-none active:bg-gray-100 dark:active:bg-gray-600"
                   >
                     {/* 顏色指示 */}
                     <div
