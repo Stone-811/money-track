@@ -1,10 +1,9 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
 import { Transaction } from '../types'
 
 interface CategoryPieChartProps {
-  data: { name: string; value: number }[]
-  transactions?: Transaction[]
+  transactions: Transaction[]
 }
 
 const COLORS = [
@@ -13,14 +12,39 @@ const COLORS = [
   '#14b8a6', '#f43f5e', '#84cc16', '#6366f1'
 ]
 
-export function CategoryPieChart({ data, transactions = [] }: CategoryPieChartProps) {
+export function CategoryPieChart({ transactions }: CategoryPieChartProps) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const now = new Date()
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  })
+
+  // 根據選中月份篩選交易
+  const filteredTransactions = useMemo(() => {
+    return transactions.filter(t => {
+      const month = `${t.date.getFullYear()}-${String(t.date.getMonth() + 1).padStart(2, '0')}`
+      return month === selectedMonth && t.type === 'expense'
+    })
+  }, [transactions, selectedMonth])
+
+  // 計算分類統計
+  const data = useMemo(() => {
+    const categoryMap: Record<string, number> = {}
+    filteredTransactions.forEach(t => {
+      const cat = t.categoryPath?.[0] || '未分類'
+      categoryMap[cat] = (categoryMap[cat] || 0) + t.amount
+    })
+    return Object.entries(categoryMap)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value)
+  }, [filteredTransactions])
+
   const total = data.reduce((sum, item) => sum + item.value, 0)
 
   // 計算選中大類的中類明細
   const getSubcategoryDetails = (mainCategory: string) => {
-    const categoryTransactions = transactions.filter(t =>
-      t.type === 'expense' && t.categoryPath?.[0] === mainCategory
+    const categoryTransactions = filteredTransactions.filter(t =>
+      t.categoryPath?.[0] === mainCategory
     )
 
     const subcategoryMap: Record<string, number> = {}
@@ -37,13 +61,50 @@ export function CategoryPieChart({ data, transactions = [] }: CategoryPieChartPr
   const subcategoryData = selectedCategory ? getSubcategoryDetails(selectedCategory) : []
   const selectedTotal = subcategoryData.reduce((sum, item) => sum + item.value, 0)
 
+  // 月份導航
+  const goToPrevMonth = () => {
+    const [year, month] = selectedMonth.split('-').map(Number)
+    const date = new Date(year, month - 2, 1)
+    setSelectedMonth(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`)
+    setSelectedCategory(null)
+  }
+
+  const goToNextMonth = () => {
+    const [year, month] = selectedMonth.split('-').map(Number)
+    const date = new Date(year, month, 1)
+    setSelectedMonth(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`)
+    setSelectedCategory(null)
+  }
+
+  const formatMonth = (month: string) => {
+    const [year, m] = month.split('-')
+    return `${year}年${parseInt(m)}月`
+  }
+
   if (data.length === 0) {
     return (
-      <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-        <div className="p-4 border-b">
-          <h3 className="text-lg font-bold text-gray-800">支出分析</h3>
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm overflow-hidden transition-colors">
+        {/* 月份選擇器 */}
+        <div className="p-4 border-b dark:border-gray-700 flex items-center justify-between">
+          <button
+            onClick={goToPrevMonth}
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+          >
+            <svg className="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100">{formatMonth(selectedMonth)}</h3>
+          <button
+            onClick={goToNextMonth}
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+          >
+            <svg className="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
         </div>
-        <div className="h-48 flex items-center justify-center text-gray-400">
+        <div className="h-48 flex items-center justify-center text-gray-400 dark:text-gray-500">
           本月尚無支出記錄
         </div>
       </div>
@@ -51,24 +112,49 @@ export function CategoryPieChart({ data, transactions = [] }: CategoryPieChartPr
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-      <div className="p-4 border-b flex items-center justify-between">
-        <h3 className="text-lg font-bold text-gray-800">
-          {selectedCategory ? (
-            <button
-              onClick={() => setSelectedCategory(null)}
-              className="flex items-center gap-2 text-blue-600 hover:text-blue-700"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              {selectedCategory}
-            </button>
-          ) : '支出分析'}
-        </h3>
-        <span className="text-sm text-gray-500">
-          總計 <span className="font-bold text-red-500">${(selectedCategory ? selectedTotal : total).toLocaleString()}</span>
-        </span>
+    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm overflow-hidden transition-colors">
+      {/* 月份選擇器與標題 */}
+      <div className="p-4 border-b dark:border-gray-700">
+        {/* 月份導航 */}
+        <div className="flex items-center justify-between mb-3">
+          <button
+            onClick={goToPrevMonth}
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+          >
+            <svg className="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <span className="text-lg font-bold text-gray-800 dark:text-gray-100">{formatMonth(selectedMonth)}</span>
+          <button
+            onClick={goToNextMonth}
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+          >
+            <svg className="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </div>
+
+        {/* 標題與總計 */}
+        <div className="flex items-center justify-between">
+          <h3 className="text-base font-semibold text-gray-700 dark:text-gray-300">
+            {selectedCategory ? (
+              <button
+                onClick={() => setSelectedCategory(null)}
+                className="flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                {selectedCategory}
+              </button>
+            ) : '支出分析'}
+          </h3>
+          <span className="text-sm text-gray-500 dark:text-gray-400">
+            總計 <span className="font-bold text-red-500 dark:text-red-400">${(selectedCategory ? selectedTotal : total).toLocaleString()}</span>
+          </span>
+        </div>
       </div>
 
       <div className="p-4">
@@ -85,7 +171,7 @@ export function CategoryPieChart({ data, transactions = [] }: CategoryPieChartPr
                 paddingAngle={2}
                 dataKey="value"
                 onClick={(entry) => {
-                  if (!selectedCategory && transactions.length > 0) {
+                  if (!selectedCategory) {
                     setSelectedCategory(entry.name)
                   }
                 }}
@@ -107,12 +193,14 @@ export function CategoryPieChart({ data, transactions = [] }: CategoryPieChartPr
               <button
                 key={item.name}
                 onClick={() => {
-                  if (!selectedCategory && transactions.length > 0) {
+                  if (!selectedCategory) {
                     setSelectedCategory(item.name)
                   }
                 }}
                 className={`w-full flex items-center gap-3 p-3 rounded-xl transition-colors ${
-                  selectedCategory ? 'cursor-default' : 'hover:bg-gray-50 cursor-pointer'
+                  selectedCategory
+                    ? 'cursor-default'
+                    : 'hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer'
                 }`}
               >
                 {/* 顏色指示 */}
@@ -122,17 +210,17 @@ export function CategoryPieChart({ data, transactions = [] }: CategoryPieChartPr
                 />
 
                 {/* 名稱 */}
-                <span className="flex-1 text-left font-medium text-gray-800">{item.name}</span>
+                <span className="flex-1 text-left font-medium text-gray-800 dark:text-gray-200">{item.name}</span>
 
                 {/* 金額與百分比 */}
                 <div className="text-right">
-                  <div className="font-bold text-gray-800">${item.value.toLocaleString()}</div>
-                  <div className="text-xs text-gray-500">{percentage}%</div>
+                  <div className="font-bold text-gray-800 dark:text-gray-200">${item.value.toLocaleString()}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">{percentage}%</div>
                 </div>
 
                 {/* 展開箭頭 */}
-                {!selectedCategory && transactions.length > 0 && (
-                  <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                {!selectedCategory && (
+                  <svg className="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                 )}
@@ -142,8 +230,8 @@ export function CategoryPieChart({ data, transactions = [] }: CategoryPieChartPr
         </div>
 
         {/* 提示文字 */}
-        {!selectedCategory && transactions.length > 0 && (
-          <p className="text-center text-xs text-gray-400 mt-4">點擊分類查看明細</p>
+        {!selectedCategory && (
+          <p className="text-center text-xs text-gray-400 dark:text-gray-500 mt-4">點擊分類查看明細</p>
         )}
       </div>
     </div>

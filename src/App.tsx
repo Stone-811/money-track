@@ -25,7 +25,6 @@ function App() {
     addTransaction,
     updateTransaction,
     deleteTransaction,
-    getCategoryStats,
     getMonthlyStats
   } = useTransactions(uid)
   const { setBudget, getBudgetForMonth } = useBudget(uid)
@@ -80,7 +79,7 @@ function App() {
       balance: stats.income - (stats.expense + pendingSubscriptionAmount)
     }
   }, [getMonthlyStats, currentMonth, pendingSubscriptionAmount])
-  const categoryStats = useMemo(() => getCategoryStats(currentMonth), [getCategoryStats, currentMonth])
+  // categoryStats 已移至 CategoryPieChart 內部計算
   const currentBudget = useMemo(() => getBudgetForMonth(currentMonth), [getBudgetForMonth, currentMonth])
 
   // 處理設定預算
@@ -162,7 +161,7 @@ function App() {
           <StatsSkeleton />
         ) : (
           <div className="space-y-4">
-            <CategoryPieChart data={categoryStats} transactions={transactions} />
+            <CategoryPieChart transactions={transactions} />
             <MonthlyBarChart transactions={transactions} />
           </div>
         )
