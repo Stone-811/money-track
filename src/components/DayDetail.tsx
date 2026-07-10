@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Transaction, TransactionInput, TransactionType, Category } from '../types'
 import { CategoryPicker } from './CategoryPicker'
 
@@ -36,6 +36,9 @@ export function DayDetail({
   const [description, setDescription] = useState('')
   const [editDate, setEditDate] = useState<string>('')
   const [submitting, setSubmitting] = useState(false)
+  const [isListening, setIsListening] = useState(false)
+
+  const recognitionRef = useRef<any>(null)
 
   // 格式化日期為 YYYY-MM-DD
   const formatDateForInput = (d: Date) => {
@@ -96,6 +99,100 @@ export function DayDetail({
     setDescription('')
     setEditDate('')
     setType('expense')
+    stopListening()
+  }
+
+  // 語音輸入
+  const startListening = () => {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      alert('您的瀏覽器不支援語音輸入')
+      return
+    }
+
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    const recognition = new SpeechRecognition()
+    recognitionRef.current = recognition
+
+    recognition.lang = 'zh-TW'
+    recognition.continuous = false
+    recognition.interimResults = false
+
+    recognition.onstart = () => setIsListening(true)
+    recognition.onend = () => setIsListening(false)
+    recognition.onerror = () => setIsListening(false)
+
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript
+      parseVoiceInput(transcript)
+    }
+
+    recognition.start()
+  }
+
+  const stopListening = () => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop()
+    }
+    setIsListening(false)
+  }
+
+  // 解析語音輸入
+  const parseVoiceInput = (text: string) => {
+    // 嘗試提取數字金額
+    const numberMatch = text.match(/(\d+)/)
+    if (numberMatch) {
+      setAmount(numberMatch[1])
+    }
+
+    // 嘗試匹配分類名稱（先嘗試中類，再嘗試大類）
+    const expenseCategories = categories.filter(c => c.type === type)
+    let matchedCategory: Category | null = null
+    let matchedCategoryName = ''
+
+    // 先嘗試匹配中類（子分類），因為通常更具體
+    const subCategories = expenseCategories.filter(c => c.level === 2)
+    for (const cat of subCategories) {
+      if (text.includes(cat.name)) {
+        matchedCategory = cat
+        matchedCategoryName = cat.name
+        break
+      }
+    }
+
+    // 如果沒有匹配中類，嘗試匹配大類
+    if (!matchedCategory) {
+      const mainCategories = expenseCategories.filter(c => c.level === 1)
+      for (const cat of mainCategories) {
+        if (text.includes(cat.name)) {
+          matchedCategory = cat
+          matchedCategoryName = cat.name
+          break
+        }
+      }
+    }
+
+    // 如果匹配到分類，自動選擇
+    if (matchedCategory) {
+      setCategoryId(matchedCategory.id)
+      setCategoryPath(getCategoryPath(matchedCategory.id))
+    }
+
+    // 移除數字、金額單位、常見詞彙和分類名稱，保留有意義的備註
+    let cleanText = text
+      .replace(/\d+/g, '')           // 移除數字
+      .replace(/[元塊錢块圓]*/g, '') // 移除金額單位
+      .replace(/花了|花|共|總共|一共/g, '') // 移除常見動詞
+
+    // 如果有匹配到分類，也從備註中移除分類名稱
+    if (matchedCategoryName) {
+      cleanText = cleanText.replace(matchedCategoryName, '')
+    }
+
+    cleanText = cleanText.trim()
+
+    if (cleanText) {
+      setDescription(cleanText)
+    }
   }
 
   const handleSubmit = async () => {
@@ -228,6 +325,34 @@ export function DayDetail({
             </div>
           ) : (
             <div className="p-4 border-b border-gray-100 dark:border-gray-700">
+              {/* 語音輸入按鈕 */}
+              <div className="flex justify-end mb-3">
+                <button
+                  onClick={isListening ? stopListening : startListening}
+                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+                    isListening
+                      ? 'bg-red-500 text-white animate-pulse'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                  title="語音輸入"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* 語音輸入提示 */}
+              {isListening && (
+                <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/30 rounded-xl text-center">
+                  <div className="flex items-center justify-center gap-2 text-red-600 dark:text-red-400">
+                    <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                    <span className="font-medium">正在聆聽...</span>
+                  </div>
+                  <p className="text-sm text-red-500 dark:text-red-400 mt-1">說出分類和金額，例如：「午餐 120 元」</p>
+                </div>
+              )}
+
               {/* 編輯模式：日期選擇 */}
               {editingId && (
                 <div className="mb-4">
