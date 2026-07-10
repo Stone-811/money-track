@@ -248,6 +248,37 @@ export function useCategories(uid: string | undefined) {
     await initializeDefaultCategories(uid)
   }, [uid])
 
+  // 重新排序分類（上移或下移）
+  const reorderCategory = useCallback(async (id: string, direction: 'up' | 'down') => {
+    if (!uid) return
+
+    const category = categories.find(c => c.id === id)
+    if (!category) return
+
+    // 找出同層級的分類
+    const siblings = categories
+      .filter(c => c.parentId === category.parentId && c.type === category.type)
+      .sort((a, b) => a.order - b.order)
+
+    const currentIndex = siblings.findIndex(c => c.id === id)
+    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1
+
+    // 檢查邊界
+    if (targetIndex < 0 || targetIndex >= siblings.length) return
+
+    const targetCategory = siblings[targetIndex]
+
+    // 交換 order 值
+    const batch = writeBatch(db)
+    const currentRef = doc(db, 'users', uid, 'categories', id)
+    const targetRef = doc(db, 'users', uid, 'categories', targetCategory.id)
+
+    batch.update(currentRef, { order: targetCategory.order })
+    batch.update(targetRef, { order: category.order })
+
+    await batch.commit()
+  }, [uid, categories])
+
   return {
     categories,
     loading,
@@ -255,6 +286,7 @@ export function useCategories(uid: string | undefined) {
     updateCategory,
     deleteCategory,
     resetCategories,
+    reorderCategory,
     buildTree,
     getCategoryPath,
     getCategoriesByType,

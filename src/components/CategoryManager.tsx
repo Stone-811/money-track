@@ -8,6 +8,7 @@ interface CategoryManagerProps {
   addCategory: (input: CategoryInput) => Promise<void>
   updateCategory: (id: string, input: Partial<CategoryInput>) => Promise<void>
   deleteCategory: (id: string) => Promise<void>
+  reorderCategory?: (id: string, direction: 'up' | 'down') => Promise<void>
 }
 
 export function CategoryManager({
@@ -16,7 +17,8 @@ export function CategoryManager({
   buildTree,
   addCategory,
   updateCategory,
-  deleteCategory
+  deleteCategory,
+  reorderCategory
 }: CategoryManagerProps) {
   const [activeType, setActiveType] = useState<TransactionType>('expense')
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -70,6 +72,37 @@ export function CategoryManager({
     if (window.confirm(`確定要刪除「${cat.name}」及其所有子分類嗎？`)) {
       await deleteCategory(cat.id)
     }
+  }
+
+  const handleMoveUp = async (cat: Category) => {
+    setMenuOpenId(null)
+    if (reorderCategory) {
+      await reorderCategory(cat.id, 'up')
+    }
+  }
+
+  const handleMoveDown = async (cat: Category) => {
+    setMenuOpenId(null)
+    if (reorderCategory) {
+      await reorderCategory(cat.id, 'down')
+    }
+  }
+
+  // 檢查分類是否可以上移或下移
+  const canMoveUp = (cat: Category) => {
+    const siblings = categories
+      .filter(c => c.parentId === cat.parentId && c.type === cat.type)
+      .sort((a, b) => a.order - b.order)
+    const index = siblings.findIndex(c => c.id === cat.id)
+    return index > 0
+  }
+
+  const canMoveDown = (cat: Category) => {
+    const siblings = categories
+      .filter(c => c.parentId === cat.parentId && c.type === cat.type)
+      .sort((a, b) => a.order - b.order)
+    const index = siblings.findIndex(c => c.id === cat.id)
+    return index < siblings.length - 1
   }
 
   const toggleMenu = (id: string) => {
@@ -166,6 +199,29 @@ export function CategoryManager({
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                           </svg>
                           新增子分類
+                        </button>
+                      )}
+                      {/* 排序按鈕 */}
+                      {reorderCategory && canMoveUp(node) && (
+                        <button
+                          onClick={() => handleMoveUp(node)}
+                          className="w-full px-4 py-3 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center gap-2 transition-colors"
+                        >
+                          <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                          </svg>
+                          上移
+                        </button>
+                      )}
+                      {reorderCategory && canMoveDown(node) && (
+                        <button
+                          onClick={() => handleMoveDown(node)}
+                          className="w-full px-4 py-3 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center gap-2 transition-colors"
+                        >
+                          <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                          下移
                         </button>
                       )}
                       <button

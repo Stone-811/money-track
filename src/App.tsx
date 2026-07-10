@@ -42,6 +42,7 @@ function App() {
     addCategory,
     updateCategory,
     deleteCategory,
+    reorderCategory,
     buildTree,
     getCategoryPath,
     getChildren
@@ -379,10 +380,10 @@ function App() {
 
       {/* 分類管理彈窗 */}
       {showCategoryManager && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-100 dark:bg-gray-900 rounded-xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 sm:p-4">
+          <div className="bg-gray-100 dark:bg-gray-900 rounded-t-xl sm:rounded-xl w-full sm:max-w-lg max-h-[85vh] sm:max-h-[90vh] overflow-hidden flex flex-col">
             {/* 標題列 */}
-            <div className="bg-white dark:bg-gray-800 px-4 py-3 flex items-center justify-between border-b dark:border-gray-700">
+            <div className="bg-white dark:bg-gray-800 px-4 py-4 flex items-center justify-between border-b dark:border-gray-700 safe-area-top">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">分類管理</h2>
               <button
                 onClick={() => setShowCategoryManager(false)}
@@ -394,7 +395,7 @@ function App() {
               </button>
             </div>
             {/* 內容 */}
-            <div className="flex-1 overflow-y-auto p-4">
+            <div className="flex-1 overflow-y-auto p-4 pb-safe">
               <CategoryManager
                 categories={categories}
                 loading={catLoading}
@@ -402,6 +403,7 @@ function App() {
                 addCategory={addCategory}
                 updateCategory={updateCategory}
                 deleteCategory={deleteCategory}
+                reorderCategory={reorderCategory}
               />
             </div>
           </div>
