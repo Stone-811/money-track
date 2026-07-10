@@ -1,4 +1,5 @@
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { useMemo } from 'react'
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from 'recharts'
 import { Transaction } from '../types'
 
 interface MonthlyBarChartProps {
@@ -17,79 +18,148 @@ const formatAmount = (value: number): string => {
 }
 
 export function MonthlyBarChart({ transactions }: MonthlyBarChartProps) {
-  // 計算最近6個月的收支
-  const getMonthlyData = () => {
-    const monthlyMap: Record<string, { income: number; expense: number }> = {}
+  // 計算最近6個月的支出
+  const { data, maxExpense, avgExpense } = useMemo(() => {
+    const monthlyMap: Record<string, number> = {}
 
     // 初始化最近6個月
     for (let i = 5; i >= 0; i--) {
       const date = new Date()
       date.setMonth(date.getMonth() - i)
       const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
-      monthlyMap[key] = { income: 0, expense: 0 }
+      monthlyMap[key] = 0
     }
 
-    // 填入資料
+    // 填入支出資料
     transactions.forEach(t => {
-      const key = `${t.date.getFullYear()}-${String(t.date.getMonth() + 1).padStart(2, '0')}`
-      if (monthlyMap[key]) {
-        if (t.type === 'income') {
-          monthlyMap[key].income += t.amount
-        } else {
-          monthlyMap[key].expense += t.amount
+      if (t.type === 'expense') {
+        const key = `${t.date.getFullYear()}-${String(t.date.getMonth() + 1).padStart(2, '0')}`
+        if (monthlyMap[key] !== undefined) {
+          monthlyMap[key] += t.amount
         }
       }
     })
 
-    return Object.entries(monthlyMap).map(([month, data]) => ({
-      month: month.slice(5), // 只顯示月份
-      收入: data.income,
-      支出: data.expense
+    const monthlyData = Object.entries(monthlyMap).map(([month, expense]) => ({
+      month: `${parseInt(month.slice(5))}月`,
+      expense,
+      fullMonth: month
     }))
-  }
 
-  const data = getMonthlyData()
+    const expenses = monthlyData.map(d => d.expense)
+    const max = Math.max(...expenses)
+    const avg = expenses.reduce((a, b) => a + b, 0) / expenses.length
+
+    return { data: monthlyData, maxExpense: max, avgExpense: avg }
+  }, [transactions])
+
+  // 當前月份
+  const currentMonth = useMemo(() => {
+    const now = new Date()
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  }, [])
 
   return (
-    <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md transition-colors">
-      <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-100">月度收支趨勢</h3>
-      <div className="h-64">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" className="dark:stroke-gray-700" />
-            <XAxis
-              dataKey="month"
-              axisLine={false}
-              tickLine={false}
-              tick={{ fill: '#6b7280', fontSize: 12 }}
-              className="dark:fill-gray-400"
-            />
-            <YAxis
-              axisLine={false}
-              tickLine={false}
-              tickFormatter={formatAmount}
-              tick={{ fill: '#6b7280', fontSize: 12 }}
-              className="dark:fill-gray-400"
-              width={45}
-            />
-            <Tooltip
-              formatter={(value: number) => `$${value.toLocaleString()}`}
-              contentStyle={{
-                borderRadius: '8px',
-                backgroundColor: 'var(--tooltip-bg, #fff)',
-                border: '1px solid var(--tooltip-border, #e5e7eb)',
-                color: 'var(--tooltip-text, #1f2937)'
-              }}
-              labelStyle={{ color: 'var(--tooltip-text, #1f2937)' }}
-            />
-            <Legend
-              wrapperStyle={{ paddingTop: '10px' }}
-              formatter={(value) => <span className="text-gray-700 dark:text-gray-300">{value}</span>}
-            />
-            <Bar dataKey="收入" fill="#22c55e" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="支出" fill="#ef4444" radius={[4, 4, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
+    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm overflow-hidden transition-colors">
+      {/* 標題區 */}
+      <div className="p-4 border-b dark:border-gray-700">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100">每月支出趨勢</h3>
+          <div className="text-right">
+            <div className="text-xs text-gray-500 dark:text-gray-400">平均</div>
+            <div className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+              ${avgExpense.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 圖表區 */}
+      <div className="p-4">
+        <div className="h-48">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={data} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+              <XAxis
+                dataKey="month"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: '#9ca3af', fontSize: 12 }}
+              />
+              <YAxis
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={formatAmount}
+                tick={{ fill: '#9ca3af', fontSize: 11 }}
+                width={40}
+              />
+              <Bar
+                dataKey="expense"
+                radius={[6, 6, 0, 0]}
+                maxBarSize={40}
+              >
+                {data.map((entry, index) => {
+                  const isCurrentMonth = entry.fullMonth === currentMonth
+                  const isMax = entry.expense === maxExpense && maxExpense > 0
+                  return (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={isCurrentMonth ? '#3b82f6' : isMax ? '#ef4444' : '#e5e7eb'}
+                      className={isCurrentMonth ? '' : isMax ? '' : 'dark:fill-gray-600'}
+                    />
+                  )
+                })}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* 圖例說明 */}
+        <div className="flex items-center justify-center gap-6 mt-4 text-xs">
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded bg-blue-500" />
+            <span className="text-gray-600 dark:text-gray-400">本月</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded bg-red-500" />
+            <span className="text-gray-600 dark:text-gray-400">最高</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded bg-gray-200 dark:bg-gray-600" />
+            <span className="text-gray-600 dark:text-gray-400">其他</span>
+          </div>
+        </div>
+
+        {/* 月份詳細數據 */}
+        <div className="mt-4 grid grid-cols-6 gap-1">
+          {data.map((item) => {
+            const isCurrentMonth = item.fullMonth === currentMonth
+            return (
+              <div
+                key={item.fullMonth}
+                className={`text-center py-2 rounded-lg ${
+                  isCurrentMonth
+                    ? 'bg-blue-50 dark:bg-blue-900/30'
+                    : 'bg-gray-50 dark:bg-gray-700/50'
+                }`}
+              >
+                <div className={`text-xs font-medium ${
+                  isCurrentMonth
+                    ? 'text-blue-600 dark:text-blue-400'
+                    : 'text-gray-500 dark:text-gray-400'
+                }`}>
+                  {item.month}
+                </div>
+                <div className={`text-xs mt-0.5 font-semibold ${
+                  isCurrentMonth
+                    ? 'text-blue-700 dark:text-blue-300'
+                    : 'text-gray-700 dark:text-gray-300'
+                }`}>
+                  {formatAmount(item.expense)}
+                </div>
+              </div>
+            )
+          })}
+        </div>
       </div>
     </div>
   )

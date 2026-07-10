@@ -20,6 +20,7 @@ function App() {
   const { isDark, toggle: toggleDarkMode } = useDarkMode()
   const { uid, loading: authLoading, signIn, signOut, error: authError } = useAuth()
   const [showCategoryManager, setShowCategoryManager] = useState(false)
+  const [showQuickAdd, setShowQuickAdd] = useState(false)
   const [showConfirmDialog, setShowConfirmDialog] = useState<{
     title: string
     message: string
@@ -102,7 +103,7 @@ function App() {
   console.log('uid:', uid, 'categories:', categories.length)
 
   return (
-    <Layout activeTab={activeTab} onTabChange={handleTabChange} onRefresh={handleRefresh}>
+    <Layout activeTab={activeTab} onTabChange={handleTabChange} onRefresh={handleRefresh} onQuickAdd={() => setShowQuickAdd(true)}>
       {/* 日曆頁面 */}
       {activeTab === 'calendar' && (
         <>
@@ -336,8 +337,10 @@ function App() {
           </div>
         </div>
       )}
-      {/* 快速記帳按鈕 */}
+      {/* 快速記帳彈窗 */}
       <QuickAddButton
+        isOpen={showQuickAdd}
+        onClose={() => setShowQuickAdd(false)}
         categories={categories}
         onAdd={addTransaction}
         getChildren={getChildren}

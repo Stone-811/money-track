@@ -8,12 +8,15 @@ interface LayoutProps {
   activeTab: TabId
   onTabChange: (tab: TabId) => void
   onRefresh?: () => Promise<void>
+  onQuickAdd?: () => void
 }
 
-export function Layout({ children, activeTab, onTabChange, onRefresh }: LayoutProps) {
-  const tabs = [
+export function Layout({ children, activeTab, onTabChange, onRefresh, onQuickAdd }: LayoutProps) {
+  const leftTabs = [
     { id: 'calendar' as const, label: '日曆', icon: '📅' },
     { id: 'stats' as const, label: '統計', icon: '📊' },
+  ]
+  const rightTabs = [
     { id: 'subscription' as const, label: '訂閱', icon: '🔄' },
     { id: 'settings' as const, label: '設定', icon: '⚙️' },
   ]
@@ -25,7 +28,7 @@ export function Layout({ children, activeTab, onTabChange, onRefresh }: LayoutPr
   )
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-16 transition-colors">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20 transition-colors">
       {/* Main Content */}
       {onRefresh ? (
         <PullToRefresh onRefresh={onRefresh}>
@@ -35,8 +38,41 @@ export function Layout({ children, activeTab, onTabChange, onRefresh }: LayoutPr
 
       {/* Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 safe-area-bottom transition-colors">
-        <div className="max-w-lg mx-auto flex">
-          {tabs.map((tab) => (
+        <div className="max-w-lg mx-auto flex items-end relative">
+          {/* Left tabs */}
+          {leftTabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => onTabChange(tab.id)}
+              className={`flex-1 py-3 text-center transition-colors ${
+                activeTab === tab.id
+                  ? 'text-blue-500 dark:text-blue-400'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+              }`}
+            >
+              <div className="text-xl mb-0.5">{tab.icon}</div>
+              <div className="text-xs font-medium">{tab.label}</div>
+            </button>
+          ))}
+
+          {/* Center Add Button */}
+          <div className="flex-1 flex justify-center">
+            <button
+              onClick={onQuickAdd}
+              className="absolute -top-6 w-14 h-14 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full shadow-lg shadow-blue-500/30 flex items-center justify-center text-white hover:scale-105 active:scale-95 transition-transform"
+            >
+              <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+              </svg>
+            </button>
+            <div className="py-3 text-center">
+              <div className="text-xl mb-0.5 opacity-0">➕</div>
+              <div className="text-xs font-medium text-gray-400 dark:text-gray-500">記帳</div>
+            </div>
+          </div>
+
+          {/* Right tabs */}
+          {rightTabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => onTabChange(tab.id)}
