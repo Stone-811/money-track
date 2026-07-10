@@ -72,6 +72,7 @@ const renderActiveShape = (props: any) => {
 
 export function CategoryPieChart({ transactions }: CategoryPieChartProps) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null)
   const [activeIndex, setActiveIndex] = useState<number | undefined>(undefined)
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date()
@@ -117,8 +118,22 @@ export function CategoryPieChart({ transactions }: CategoryPieChartProps) {
       .sort((a, b) => b.value - a.value)
   }
 
+  // 取得選中中類的交易明細
+  const getSubcategoryTransactions = (mainCategory: string, subcategory: string) => {
+    return filteredTransactions
+      .filter(t =>
+        t.categoryPath?.[0] === mainCategory &&
+        (t.categoryPath?.[1] || '未分類') === subcategory
+      )
+      .sort((a, b) => b.date.getTime() - a.date.getTime())
+  }
+
   const subcategoryData = selectedCategory ? getSubcategoryDetails(selectedCategory) : []
   const selectedTotal = subcategoryData.reduce((sum, item) => sum + item.value, 0)
+  const subcategoryTransactions = selectedCategory && selectedSubcategory
+    ? getSubcategoryTransactions(selectedCategory, selectedSubcategory)
+    : []
+  const subcategoryTransactionsTotal = subcategoryTransactions.reduce((sum, t) => sum + t.amount, 0)
 
   const onPieEnter = useCallback((_: any, index: number) => {
     setActiveIndex(index)
@@ -134,6 +149,7 @@ export function CategoryPieChart({ transactions }: CategoryPieChartProps) {
     const date = new Date(year, month - 2, 1)
     setSelectedMonth(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`)
     setSelectedCategory(null)
+    setSelectedSubcategory(null)
   }
 
   const goToNextMonth = () => {
@@ -141,6 +157,21 @@ export function CategoryPieChart({ transactions }: CategoryPieChartProps) {
     const date = new Date(year, month, 1)
     setSelectedMonth(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`)
     setSelectedCategory(null)
+    setSelectedSubcategory(null)
+  }
+
+  // 返回上一層
+  const goBack = () => {
+    if (selectedSubcategory) {
+      setSelectedSubcategory(null)
+    } else if (selectedCategory) {
+      setSelectedCategory(null)
+    }
+  }
+
+  // 格式化日期
+  const formatDate = (date: Date) => {
+    return `${date.getMonth() + 1}/${date.getDate()}`
   }
 
   const formatMonth = (month: string) => {
@@ -206,9 +237,21 @@ export function CategoryPieChart({ transactions }: CategoryPieChartProps) {
         {/* 標題與總計 */}
         <div className="flex items-center justify-between">
           <h3 className="text-base font-semibold text-gray-700 dark:text-gray-300">
-            {selectedCategory ? (
+            {selectedSubcategory ? (
               <button
-                onClick={() => setSelectedCategory(null)}
+                onClick={goBack}
+                className="flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                <span className="text-gray-400 dark:text-gray-500">{selectedCategory}</span>
+                <span className="text-gray-400 dark:text-gray-500">›</span>
+                {selectedSubcategory}
+              </button>
+            ) : selectedCategory ? (
+              <button
+                onClick={goBack}
                 className="flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -219,92 +262,131 @@ export function CategoryPieChart({ transactions }: CategoryPieChartProps) {
             ) : '支出分析'}
           </h3>
           <span className="text-sm text-gray-500 dark:text-gray-400">
-            總計 <span className="font-bold text-red-500 dark:text-red-400">${(selectedCategory ? selectedTotal : total).toLocaleString()}</span>
+            總計 <span className="font-bold text-red-500 dark:text-red-400">
+              ${(selectedSubcategory ? subcategoryTransactionsTotal : selectedCategory ? selectedTotal : total).toLocaleString()}
+            </span>
           </span>
         </div>
       </div>
 
       <div className="p-4">
-        {/* 圖表 */}
-        <div className="h-64 mb-4">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={selectedCategory ? subcategoryData : data}
-                cx="50%"
-                cy="50%"
-                innerRadius={45}
-                outerRadius={70}
-                paddingAngle={2}
-                dataKey="value"
-                activeIndex={activeIndex}
-                activeShape={renderActiveShape}
-                onMouseEnter={onPieEnter}
-                onMouseLeave={onPieLeave}
-                label={renderCustomLabel}
-                labelLine={false}
-                onClick={(entry) => {
-                  if (!selectedCategory) {
-                    setSelectedCategory(entry.name)
-                  }
-                }}
-                style={{ cursor: selectedCategory ? 'default' : 'pointer' }}
-              >
-                {(selectedCategory ? subcategoryData : data).map((_, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* 分類列表 */}
-        <div className="space-y-2">
-          {(selectedCategory ? subcategoryData : data).map((item, index) => {
-            const percentage = ((item.value / (selectedCategory ? selectedTotal : total)) * 100).toFixed(1)
-            return (
-              <button
-                key={item.name}
-                onClick={() => {
-                  if (!selectedCategory) {
-                    setSelectedCategory(item.name)
-                  }
-                }}
-                className={`w-full flex items-center gap-3 p-3 rounded-xl transition-colors ${
-                  selectedCategory
-                    ? 'cursor-default'
-                    : 'hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer'
-                }`}
-              >
-                {/* 顏色指示 */}
+        {/* 交易明細列表（選中中類時顯示） */}
+        {selectedSubcategory ? (
+          <div className="space-y-2">
+            {subcategoryTransactions.length === 0 ? (
+              <div className="text-center text-gray-400 dark:text-gray-500 py-8">
+                無交易記錄
+              </div>
+            ) : (
+              subcategoryTransactions.map((t) => (
                 <div
-                  className="w-3 h-3 rounded-full flex-shrink-0"
-                  style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                />
+                  key={t.id}
+                  className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl"
+                >
+                  {/* 日期 */}
+                  <div className="w-12 text-center">
+                    <div className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                      {formatDate(t.date)}
+                    </div>
+                  </div>
 
-                {/* 名稱 */}
-                <span className="flex-1 text-left font-medium text-gray-800 dark:text-gray-200">{item.name}</span>
+                  {/* 備註 */}
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-gray-800 dark:text-gray-200 truncate">
+                      {t.description || '-'}
+                    </div>
+                  </div>
 
-                {/* 金額與百分比 */}
-                <div className="text-right">
-                  <div className="font-bold text-gray-800 dark:text-gray-200">${item.value.toLocaleString()}</div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">{percentage}%</div>
+                  {/* 金額 */}
+                  <div className="font-bold text-red-500 dark:text-red-400">
+                    ${t.amount.toLocaleString()}
+                  </div>
                 </div>
+              ))
+            )}
+          </div>
+        ) : (
+          <>
+            {/* 圖表 */}
+            <div className="h-64 mb-4">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={selectedCategory ? subcategoryData : data}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={45}
+                    outerRadius={70}
+                    paddingAngle={2}
+                    dataKey="value"
+                    activeIndex={activeIndex}
+                    activeShape={renderActiveShape}
+                    onMouseEnter={onPieEnter}
+                    onMouseLeave={onPieLeave}
+                    label={renderCustomLabel}
+                    labelLine={false}
+                    onClick={(entry) => {
+                      if (selectedCategory) {
+                        setSelectedSubcategory(entry.name)
+                      } else {
+                        setSelectedCategory(entry.name)
+                      }
+                    }}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    {(selectedCategory ? subcategoryData : data).map((_, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
 
-                {/* 展開箭頭 */}
-                {!selectedCategory && (
-                  <svg className="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                )}
-              </button>
-            )
-          })}
-        </div>
+            {/* 分類列表 */}
+            <div className="space-y-2">
+              {(selectedCategory ? subcategoryData : data).map((item, index) => {
+                const percentage = ((item.value / (selectedCategory ? selectedTotal : total)) * 100).toFixed(1)
+                return (
+                  <button
+                    key={item.name}
+                    onClick={() => {
+                      if (selectedCategory) {
+                        setSelectedSubcategory(item.name)
+                      } else {
+                        setSelectedCategory(item.name)
+                      }
+                    }}
+                    className="w-full flex items-center gap-3 p-3 rounded-xl transition-colors hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+                  >
+                    {/* 顏色指示 */}
+                    <div
+                      className="w-3 h-3 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                    />
 
-        {/* 提示文字 */}
-        {!selectedCategory && (
-          <p className="text-center text-xs text-gray-400 dark:text-gray-500 mt-4">點擊分類查看明細</p>
+                    {/* 名稱 */}
+                    <span className="flex-1 text-left font-medium text-gray-800 dark:text-gray-200">{item.name}</span>
+
+                    {/* 金額與百分比 */}
+                    <div className="text-right">
+                      <div className="font-bold text-gray-800 dark:text-gray-200">${item.value.toLocaleString()}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">{percentage}%</div>
+                    </div>
+
+                    {/* 展開箭頭 */}
+                    <svg className="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* 提示文字 */}
+            {!selectedCategory && (
+              <p className="text-center text-xs text-gray-400 dark:text-gray-500 mt-4">點擊分類查看明細</p>
+            )}
+          </>
         )}
       </div>
     </div>
