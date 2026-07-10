@@ -13,6 +13,7 @@ import { auth } from '../lib/firebase'
 const ALLOWED_EMAILS = [
   'stone870811@gmail.com',
   'tingo8320@gmail.com',
+  'liris429@gmail.com',
 ]
 
 const googleProvider = new GoogleAuthProvider()
