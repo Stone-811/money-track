@@ -42,7 +42,7 @@ function App() {
     addCategory,
     updateCategory,
     deleteCategory,
-    reorderCategory,
+    batchReorderCategories,
     buildTree,
     getCategoryPath,
     getChildren
@@ -380,10 +380,13 @@ function App() {
 
       {/* 分類管理彈窗 */}
       {showCategoryManager && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 sm:p-4">
-          <div className="bg-gray-100 dark:bg-gray-900 rounded-t-xl sm:rounded-xl w-full sm:max-w-lg max-h-[85vh] sm:max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex flex-col">
+          {/* 上方空白區域（點擊關閉） */}
+          <div className="flex-1 sm:flex-none sm:h-[5vh]" onClick={() => setShowCategoryManager(false)} />
+          {/* 彈窗內容 */}
+          <div className="bg-gray-100 dark:bg-gray-900 rounded-t-xl sm:rounded-xl sm:mx-auto sm:w-full sm:max-w-lg max-h-[85vh] sm:max-h-[85vh] flex flex-col">
             {/* 標題列 */}
-            <div className="bg-white dark:bg-gray-800 px-4 py-4 flex items-center justify-between border-b dark:border-gray-700 safe-area-top">
+            <div className="flex-shrink-0 bg-white dark:bg-gray-800 px-4 py-4 flex items-center justify-between border-b dark:border-gray-700 rounded-t-xl">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">分類管理</h2>
               <button
                 onClick={() => setShowCategoryManager(false)}
@@ -403,10 +406,12 @@ function App() {
                 addCategory={addCategory}
                 updateCategory={updateCategory}
                 deleteCategory={deleteCategory}
-                reorderCategory={reorderCategory}
+                batchReorderCategories={batchReorderCategories}
               />
             </div>
           </div>
+          {/* 下方空白區域（桌面版點擊關閉） */}
+          <div className="hidden sm:block sm:flex-1" onClick={() => setShowCategoryManager(false)} />
         </div>
       )}
 

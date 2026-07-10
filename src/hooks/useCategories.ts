@@ -279,6 +279,19 @@ export function useCategories(uid: string | undefined) {
     await batch.commit()
   }, [uid, categories])
 
+  // 批次重新排序分類（用於拖曳排序）
+  const batchReorderCategories = useCallback(async (orderedIds: string[]) => {
+    if (!uid || orderedIds.length === 0) return
+
+    const batch = writeBatch(db)
+    orderedIds.forEach((id, index) => {
+      const ref = doc(db, 'users', uid, 'categories', id)
+      batch.update(ref, { order: index })
+    })
+
+    await batch.commit()
+  }, [uid])
+
   return {
     categories,
     loading,
@@ -287,6 +300,7 @@ export function useCategories(uid: string | undefined) {
     deleteCategory,
     resetCategories,
     reorderCategory,
+    batchReorderCategories,
     buildTree,
     getCategoryPath,
     getCategoriesByType,
