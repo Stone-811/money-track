@@ -1,6 +1,64 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
-  <rect width="512" height="512" rx="64" fill="#3b82f6"/>
-  <path d="M128 170h256a16 16 0 0116 16v128a16 16 0 01-16 16H128a16 16 0 01-16-16V186a16 16 0 0116-16z" fill="white"/>
-  <circle cx="320" cy="256" r="32" fill="#3b82f6"/>
-  <path d="M144 150h224a16 16 0 0116 16" stroke="white" stroke-width="8" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="notebookGrad512" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#d1fae5"/>
+      <stop offset="100%" style="stop-color:#a7f3d0"/>
+    </linearGradient>
+    <linearGradient id="walletGrad512" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#c4b5fd"/>
+      <stop offset="100%" style="stop-color:#a78bfa"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="240" fill="#fef7f0"/>
+
+  <!-- Notebook binding -->
+  <rect x="75" y="133" width="48" height="267" rx="10" fill="#5eead4"/>
+  <circle cx="99" cy="173" r="10" fill="#2dd4bf"/>
+  <circle cx="99" cy="227" r="10" fill="#2dd4bf"/>
+  <circle cx="99" cy="280" r="10" fill="#2dd4bf"/>
+  <circle cx="99" cy="333" r="10" fill="#2dd4bf"/>
+
+  <!-- Notebook body -->
+  <rect x="107" y="133" width="200" height="267" rx="21" fill="url(#notebookGrad512)"/>
+
+  <!-- Receipt -->
+  <path d="M147 93 L267 93 L267 160 L147 160 Z" fill="#fff" stroke="#e5e7eb" stroke-width="2"/>
+  <path d="M147 93 L155 80 L163 93 L171 80 L179 93 L187 80 L195 93 L203 80 L211 93 L219 80 L227 93 L235 80 L243 93 L251 80 L259 93 L267 80 L267 93 Z" fill="#fff"/>
+  <text x="207" y="139" font-family="Arial" font-size="37" font-weight="bold" fill="#10b981" text-anchor="middle">$</text>
+  <line x1="160" y1="112" x2="240" y2="112" stroke="#d1d5db" stroke-width="5"/>
+  <line x1="160" y1="128" x2="227" y2="128" stroke="#d1d5db" stroke-width="5"/>
+
+  <!-- Notebook face -->
+  <circle cx="165" cy="253" r="13" fill="#1f2937"/>
+  <circle cx="218" cy="253" r="13" fill="#1f2937"/>
+  <circle cx="168" cy="248" r="5" fill="#fff"/>
+  <circle cx="221" cy="248" r="5" fill="#fff"/>
+  <path d="M173 288 Q192 307 213 288" stroke="#1f2937" stroke-width="8" fill="none" stroke-linecap="round"/>
+
+  <!-- Blush -->
+  <ellipse cx="147" cy="280" rx="16" ry="10" fill="#fecaca" opacity="0.6"/>
+  <ellipse cx="240" cy="280" rx="16" ry="10" fill="#fecaca" opacity="0.6"/>
+
+  <!-- Notebook lines -->
+  <line x1="133" y1="333" x2="280" y2="333" stroke="#d1d5db" stroke-width="5"/>
+  <line x1="133" y1="360" x2="267" y2="360" stroke="#d1d5db" stroke-width="5"/>
+
+  <!-- Wallet -->
+  <rect x="307" y="280" width="133" height="107" rx="16" fill="url(#walletGrad512)"/>
+  <rect x="307" y="280" width="133" height="32" rx="16" fill="#a78bfa"/>
+  <circle cx="413" cy="347" r="13" fill="#fbbf24"/>
+  <rect x="320" y="267" width="93" height="21" rx="5" fill="#6ee7b7"/>
+
+  <!-- Coin -->
+  <circle cx="133" cy="387" r="53" fill="#fbbf24"/>
+  <circle cx="133" cy="387" r="43" fill="#fcd34d"/>
+  <text x="133" y="405" font-family="Arial" font-size="53" font-weight="bold" fill="#d97706" text-anchor="middle">$</text>
+
+  <!-- Chart bubble -->
+  <circle cx="387" cy="187" r="59" fill="#fff" stroke="#e5e7eb" stroke-width="5"/>
+  <rect x="352" y="192" width="21" height="40" rx="5" fill="#5eead4"/>
+  <rect x="379" y="165" width="21" height="67" rx="5" fill="#fbbf24"/>
+  <rect x="405" y="179" width="21" height="53" rx="5" fill="#f87171"/>
 </svg>

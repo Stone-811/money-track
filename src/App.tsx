@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import { useAuth } from './hooks/useAuth'
 import { useTransactions } from './hooks/useTransactions'
 import { useBudget } from './hooks/useBudget'
@@ -65,12 +65,6 @@ function App() {
     setActiveTab(tab)
   }
 
-  // 當前月份及預算
-  const currentMonth = useMemo(() => {
-    const now = new Date()
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
-  }, [])
-  const currentBudget = useMemo(() => getBudgetForMonth(currentMonth), [getBudgetForMonth, currentMonth])
 
   // 處理設定預算
   const handleSetBudget = async (month: string, amount: number) => {
@@ -124,7 +118,7 @@ function App() {
                 transactions={transactions}
                 subscriptions={subscriptions}
                 categories={categories}
-                budget={currentBudget}
+                getBudgetForMonth={getBudgetForMonth}
                 onSetBudget={handleSetBudget}
                 onDeleteTransaction={deleteTransaction}
                 onAddTransaction={addTransaction}

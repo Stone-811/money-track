@@ -1,4 +1,4 @@
-import { useState, useMemo, FormEvent } from 'react'
+import { useState, useMemo, useEffect, FormEvent } from 'react'
 import { Transaction, Subscription, TransactionInput, TransactionType, Category, Budget } from '../types'
 import { DayDetail } from './DayDetail'
 
@@ -6,7 +6,7 @@ interface CalendarViewProps {
   transactions: Transaction[]
   subscriptions: Subscription[]
   categories: Category[]
-  budget?: Budget
+  getBudgetForMonth: (month: string) => Budget | undefined
   onSetBudget: (month: string, amount: number) => Promise<void>
   onDeleteTransaction: (id: string) => void
   onAddTransaction: (input: TransactionInput) => Promise<void>
@@ -19,7 +19,7 @@ export function CalendarView({
   transactions,
   subscriptions,
   categories,
-  budget,
+  getBudgetForMonth,
   onSetBudget,
   onDeleteTransaction,
   onAddTransaction,
@@ -114,6 +114,22 @@ export function CalendarView({
     return { income, expense, pendingAmount, balance: income - expense - pendingAmount }
   }, [calendarData])
 
+  // 當前顯示月份字串
+  const displayedMonth = useMemo(() => {
+    return `${year}-${String(month + 1).padStart(2, '0')}`
+  }, [year, month])
+
+  // 月份切換時關閉預算編輯並重設金額
+  useEffect(() => {
+    setEditingBudget(false)
+    setBudgetAmount('')
+  }, [displayedMonth])
+
+  // 當前顯示月份的預算
+  const budget = useMemo(() => {
+    return getBudgetForMonth(displayedMonth)
+  }, [getBudgetForMonth, displayedMonth])
+
   // 預算計算
   const budgetInfo = useMemo(() => {
     const totalBudget = budget?.amount || 0
@@ -131,8 +147,7 @@ export function CalendarView({
 
     setSavingBudget(true)
     try {
-      const monthStr = `${year}-${String(month + 1).padStart(2, '0')}`
-      await onSetBudget(monthStr, parseFloat(budgetAmount))
+      await onSetBudget(displayedMonth, parseFloat(budgetAmount))
       setEditingBudget(false)
     } finally {
       setSavingBudget(false)
@@ -192,7 +207,7 @@ export function CalendarView({
 
   return (
     <div className="space-y-3">
-      {/* 月份摘要卡片 + 預算追蹤 */}
+      {/* 月份摘要卡片 */}
       <div className="bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 rounded-2xl p-4 text-white shadow-lg">
         {/* 月份導航 */}
         <div className="flex items-center justify-between mb-3">
@@ -218,7 +233,7 @@ export function CalendarView({
         </div>
 
         {/* 收支總覽 */}
-        <div className="grid grid-cols-3 gap-2 text-center mb-3">
+        <div className="grid grid-cols-3 gap-2 text-center">
           <div className="bg-white/10 rounded-xl py-2 px-1">
             <div className="text-xs opacity-80">收入</div>
             <div className="text-base font-bold text-green-200">+{monthStats.income.toLocaleString()}</div>
@@ -234,10 +249,24 @@ export function CalendarView({
             </div>
           </div>
         </div>
+      </div>
 
-        {/* 預算追蹤 */}
+      {/* 預算追蹤（獨立區塊） */}
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-4 transition-colors">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">💰 月預算</h3>
+          {budgetInfo.totalBudget > 0 && !editingBudget && (
+            <button
+              onClick={() => { setBudgetAmount(budgetInfo.totalBudget.toString()); setEditingBudget(true) }}
+              className="text-xs text-blue-500 dark:text-blue-400 hover:underline"
+            >
+              修改
+            </button>
+          )}
+        </div>
+
         {editingBudget ? (
-          <form onSubmit={handleBudgetSubmit} className="bg-white/10 rounded-xl p-3">
+          <form onSubmit={handleBudgetSubmit}>
             <div className="flex items-center gap-2">
               <input
                 type="number"
@@ -248,63 +277,57 @@ export function CalendarView({
                 step="100"
                 required
                 autoFocus
-                className="flex-1 px-3 py-2 bg-white/20 border border-white/30 rounded-lg text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50"
+                className="flex-1 px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <button
                 type="submit"
                 disabled={savingBudget}
-                className="px-4 py-2 bg-white text-indigo-600 rounded-lg font-medium hover:bg-white/90 disabled:opacity-50 transition-colors"
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 disabled:opacity-50 transition-colors"
               >
                 {savingBudget ? '...' : '確定'}
               </button>
               <button
                 type="button"
                 onClick={() => setEditingBudget(false)}
-                className="px-3 py-2 bg-white/20 rounded-lg hover:bg-white/30 transition-colors"
+                className="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
               >
                 取消
               </button>
             </div>
           </form>
         ) : budgetInfo.totalBudget > 0 ? (
-          <div className="bg-white/10 rounded-xl p-3">
+          <div>
             {/* 預算進度條 */}
-            <div className="flex items-center justify-between text-xs mb-2">
-              <span className="opacity-80">預算使用</span>
-              <span>
+            <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
+              <span>已使用</span>
+              <span className="font-medium text-gray-700 dark:text-gray-300">
                 ${budgetInfo.totalSpent.toLocaleString()} / ${budgetInfo.totalBudget.toLocaleString()}
               </span>
             </div>
-            <div className="h-2 bg-white/20 rounded-full overflow-hidden mb-2">
+            <div className="h-3 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden mb-3">
               <div
                 className={`h-full rounded-full transition-all duration-500 ${
-                  budgetInfo.isOverBudget ? 'bg-red-400' : budgetInfo.percentage > 80 ? 'bg-yellow-400' : 'bg-green-400'
+                  budgetInfo.isOverBudget ? 'bg-red-500' : budgetInfo.percentage > 80 ? 'bg-yellow-500' : 'bg-green-500'
                 }`}
                 style={{ width: `${budgetInfo.percentage}%` }}
               />
             </div>
             {/* 剩餘預算 */}
-            <div className="flex items-center justify-between">
-              <span className={`text-lg font-bold ${budgetInfo.isOverBudget ? 'text-red-300' : 'text-green-300'}`}>
-                {budgetInfo.isOverBudget ? '超支 ' : '剩餘 '}${Math.abs(budgetInfo.remaining).toLocaleString()}
-              </span>
-              <button
-                onClick={() => { setBudgetAmount(budgetInfo.totalBudget.toString()); setEditingBudget(true) }}
-                className="text-xs opacity-70 hover:opacity-100 underline transition-opacity"
-              >
-                修改預算
-              </button>
+            <div className={`text-center text-lg font-bold ${
+              budgetInfo.isOverBudget ? 'text-red-500' : 'text-green-500'
+            }`}>
+              {budgetInfo.isOverBudget ? '超支 ' : '剩餘 '}${Math.abs(budgetInfo.remaining).toLocaleString()}
             </div>
           </div>
         ) : (
           <button
             onClick={() => setEditingBudget(true)}
-            className="w-full bg-white/10 hover:bg-white/20 rounded-xl p-3 flex items-center justify-center gap-2 transition-colors"
+            className="w-full py-3 border-2 border-dashed border-gray-200 dark:border-gray-600 rounded-xl text-gray-400 dark:text-gray-500 hover:border-blue-400 hover:text-blue-500 dark:hover:border-blue-500 dark:hover:text-blue-400 transition-colors flex items-center justify-center gap-2"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
             </svg>
-            <span>設定月預算</span>
+            <span>設定本月預算</span>
           </button>
         )}
       </div>

@@ -326,8 +326,8 @@ export function CategoryManager({
     }),
     useSensor(TouchSensor, {
       activationConstraint: {
-        delay: 200,
-        tolerance: 5
+        delay: 400,
+        tolerance: 8
       }
     }),
     useSensor(KeyboardSensor, {
