@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { Transaction, TransactionInput, TransactionType, Category } from '../types'
 import { CategoryPicker } from './CategoryPicker'
 
@@ -35,38 +35,6 @@ export function DayDetail({
   const [categoryPath, setCategoryPath] = useState<string[]>([])
   const [description, setDescription] = useState('')
   const [submitting, setSubmitting] = useState(false)
-
-  // 滑動相關
-  const touchStartX = useRef<number>(0)
-  const touchEndX = useRef<number>(0)
-  const contentRef = useRef<HTMLDivElement>(null)
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartX.current = e.touches[0].clientX
-  }
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    touchEndX.current = e.touches[0].clientX
-  }
-
-  const handleTouchEnd = () => {
-    if (!onDateChange) return
-
-    const diff = touchStartX.current - touchEndX.current
-    const minSwipeDistance = 50
-
-    if (Math.abs(diff) > minSwipeDistance) {
-      const newDate = new Date(date)
-      if (diff > 0) {
-        // 向左滑 -> 下一天
-        newDate.setDate(newDate.getDate() + 1)
-      } else {
-        // 向右滑 -> 上一天
-        newDate.setDate(newDate.getDate() - 1)
-      }
-      onDateChange(newDate)
-    }
-  }
 
   useEffect(() => {
     if (editingId) {
@@ -154,12 +122,8 @@ export function DayDetail({
   return (
     <div className="fixed inset-0 bg-black/60 flex items-end justify-center z-50" onClick={onClose}>
       <div
-        ref={contentRef}
         className="bg-gray-50 rounded-t-3xl w-full max-w-lg max-h-[90vh] overflow-hidden animate-slide-up"
         onClick={e => e.stopPropagation()}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
       >
         {/* 拖曳指示條 */}
         <div className="flex justify-center pt-3 pb-2">
