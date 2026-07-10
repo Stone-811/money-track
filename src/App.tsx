@@ -4,6 +4,7 @@ import { useTransactions } from './hooks/useTransactions'
 import { useBudget } from './hooks/useBudget'
 import { useCategories } from './hooks/useCategories'
 import { useSubscriptions } from './hooks/useSubscriptions'
+import { useDarkMode } from './hooks/useDarkMode'
 import { Layout, TabId } from './components/Layout'
 import { CategoryPieChart } from './components/CategoryPieChart'
 import { MonthlyBarChart } from './components/MonthlyBarChart'
@@ -14,8 +15,10 @@ import { SubscriptionManager } from './components/SubscriptionManager'
 import { SubscriptionReminder } from './components/SubscriptionReminder'
 import { LoginScreen } from './components/LoginScreen'
 import { QuickAddButton } from './components/QuickAddButton'
+import { CalendarSkeleton, StatsSkeleton } from './components/Skeleton'
 
 function App() {
+  const { isDark, toggle: toggleDarkMode } = useDarkMode()
   const { uid, loading: authLoading, signIn, signOut, error: authError } = useAuth()
   const {
     transactions,
@@ -85,13 +88,18 @@ function App() {
     await setBudget({ month, amount })
   }
 
+  // 下拉刷新（Firestore 已是即時同步，這裡提供視覺回饋）
+  const handleRefresh = async () => {
+    await new Promise(resolve => setTimeout(resolve, 500))
+  }
+
   // Loading 狀態
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <div className="text-gray-600">載入中...</div>
+          <div className="text-gray-600 dark:text-gray-400">載入中...</div>
         </div>
       </div>
     )
@@ -106,48 +114,58 @@ function App() {
   console.log('uid:', uid, 'categories:', categories.length)
 
   return (
-    <Layout activeTab={activeTab} onTabChange={setActiveTab}>
+    <Layout activeTab={activeTab} onTabChange={setActiveTab} onRefresh={handleRefresh}>
       {/* 日曆頁面 */}
       {activeTab === 'calendar' && (
         <>
-          {/* 預算追蹤 */}
-          <div className="mb-4">
-            <BudgetTracker
-              currentMonth={currentMonth}
-              budget={currentBudget}
-              spent={monthlyStats.expense}
-              onSetBudget={handleSetBudget}
-            />
-          </div>
+          {catLoading ? (
+            <CalendarSkeleton />
+          ) : (
+            <>
+              {/* 預算追蹤 */}
+              <div className="mb-4">
+                <BudgetTracker
+                  currentMonth={currentMonth}
+                  budget={currentBudget}
+                  spent={monthlyStats.expense}
+                  onSetBudget={handleSetBudget}
+                />
+              </div>
 
-          {pendingReminders.length > 0 && (
-            <div className="mb-4">
-              <SubscriptionReminder
-                pendingReminders={pendingReminders}
-                onConfirm={confirmReminder}
-                onSkip={skipReminder}
+              {pendingReminders.length > 0 && (
+                <div className="mb-4">
+                  <SubscriptionReminder
+                    pendingReminders={pendingReminders}
+                    onConfirm={confirmReminder}
+                    onSkip={skipReminder}
+                  />
+                </div>
+              )}
+              <CalendarView
+                transactions={transactions}
+                subscriptions={subscriptions}
+                categories={categories}
+                onDeleteTransaction={deleteTransaction}
+                onAddTransaction={addTransaction}
+                onUpdateTransaction={updateTransaction}
+                getChildren={getChildren}
+                getCategoryPath={getCategoryPath}
               />
-            </div>
+            </>
           )}
-          <CalendarView
-            transactions={transactions}
-            subscriptions={subscriptions}
-            categories={categories}
-            onDeleteTransaction={deleteTransaction}
-            onAddTransaction={addTransaction}
-            onUpdateTransaction={updateTransaction}
-            getChildren={getChildren}
-            getCategoryPath={getCategoryPath}
-          />
         </>
       )}
 
       {/* 統計頁面 */}
       {activeTab === 'stats' && (
-        <div className="space-y-4">
-          <CategoryPieChart data={categoryStats} transactions={transactions} />
-          <MonthlyBarChart transactions={transactions} />
-        </div>
+        catLoading ? (
+          <StatsSkeleton />
+        ) : (
+          <div className="space-y-4">
+            <CategoryPieChart data={categoryStats} transactions={transactions} />
+            <MonthlyBarChart transactions={transactions} />
+          </div>
+        )
       )}
 
       {/* 訂閱頁面 */}
@@ -166,6 +184,33 @@ function App() {
       {/* 設定頁面 */}
       {activeTab === 'settings' && (
         <div className="space-y-4">
+          {/* 深色模式切換 */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">{isDark ? '🌙' : '☀️'}</span>
+                <div>
+                  <div className="font-medium text-gray-800 dark:text-gray-200">深色模式</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400">
+                    {isDark ? '目前為深色主題' : '目前為淺色主題'}
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={toggleDarkMode}
+                className={`relative w-14 h-7 rounded-full transition-colors ${
+                  isDark ? 'bg-blue-500' : 'bg-gray-300'
+                }`}
+              >
+                <div
+                  className={`absolute top-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform ${
+                    isDark ? 'translate-x-7' : 'translate-x-0.5'
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+
           {/* 分類管理 */}
           <CategoryManager
             categories={categories}
@@ -177,24 +222,24 @@ function App() {
           />
 
           {/* 重置分類按鈕 */}
-          <div className="bg-white rounded-lg p-4 shadow-sm">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
             <button
               onClick={async () => {
                 if (confirm('確定要重置所有分類嗎？這將刪除所有自訂分類並恢復預設值。')) {
                   await resetCategories()
                 }
               }}
-              className="w-full py-3 px-4 bg-orange-50 text-orange-600 rounded-lg hover:bg-orange-100 transition-colors font-medium"
+              className="w-full py-3 px-4 bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded-lg hover:bg-orange-100 dark:hover:bg-orange-900/50 transition-colors font-medium"
             >
               重置為預設分類
             </button>
           </div>
 
           {/* 登出按鈕 */}
-          <div className="bg-white rounded-lg p-4 shadow-sm">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
             <button
               onClick={signOut}
-              className="w-full py-3 px-4 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors font-medium"
+              className="w-full py-3 px-4 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors font-medium"
             >
               登出
             </button>

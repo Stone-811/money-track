@@ -56,6 +56,10 @@ export function QuickAddButton({
         description,
         date: new Date()
       })
+      // 震動回饋
+      if ('vibrate' in navigator) {
+        navigator.vibrate(50)
+      }
       handleClose()
     } finally {
       setSubmitting(false)

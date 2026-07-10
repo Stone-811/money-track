@@ -111,9 +111,9 @@ export function CategoryPicker({
       {/* 已選擇的顯示 */}
       {selectedPath.length > 0 && (
         <div className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
-          <svg className="w-5 h-5 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-          </svg>
+          {categories.find(c => c.id === selectedId)?.icon && (
+            <span className="text-lg">{categories.find(c => c.id === selectedId)?.icon}</span>
+          )}
           <span className="text-blue-700 font-medium">{selectedPath.join(' › ')}</span>
         </div>
       )}
@@ -129,7 +129,7 @@ export function CategoryPicker({
           <option value="">請選擇大類...</option>
           {level1Categories.map((cat) => (
             <option key={cat.id} value={cat.id}>
-              {cat.name}
+              {cat.icon ? `${cat.icon} ${cat.name}` : cat.name}
             </option>
           ))}
         </select>
@@ -147,7 +147,7 @@ export function CategoryPicker({
             <option value="">請選擇中類...</option>
             {level2Categories.map((cat) => (
               <option key={cat.id} value={cat.id}>
-                {cat.name}
+                {cat.icon ? `${cat.icon} ${cat.name}` : cat.name}
               </option>
             ))}
           </select>
@@ -166,7 +166,7 @@ export function CategoryPicker({
             <option value="">請選擇小類...</option>
             {level3Categories.map((cat) => (
               <option key={cat.id} value={cat.id}>
-                {cat.name}
+                {cat.icon ? `${cat.icon} ${cat.name}` : cat.name}
               </option>
             ))}
           </select>

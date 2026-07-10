@@ -124,55 +124,55 @@ export interface SubscriptionDoc {
 
 // 預設分類結構（只有大類和中類）
 export const DEFAULT_EXPENSE_CATEGORIES = [
-  { name: '飲食', level: 1, children: [
-    { name: '早餐', level: 2 },
-    { name: '午餐', level: 2 },
-    { name: '晚餐', level: 2 },
-    { name: '飲品', level: 2 },
-    { name: '點心', level: 2 },
+  { name: '飲食', icon: '🍽️', level: 1, children: [
+    { name: '早餐', icon: '🥐', level: 2 },
+    { name: '午餐', icon: '🍱', level: 2 },
+    { name: '晚餐', icon: '🍝', level: 2 },
+    { name: '飲品', icon: '🧋', level: 2 },
+    { name: '點心', icon: '🍰', level: 2 },
   ]},
-  { name: '市場超市', level: 1, children: [
-    { name: '青菜', level: 2 },
-    { name: '肉類', level: 2 },
-    { name: '成菜', level: 2 },
-    { name: '水果', level: 2 },
-    { name: 'SOGO', level: 2 },
-    { name: '全聯', level: 2 },
-    { name: '棉花田', level: 2 },
-    { name: '其他', level: 2 },
+  { name: '市場超市', icon: '🛒', level: 1, children: [
+    { name: '青菜', icon: '🥬', level: 2 },
+    { name: '肉類', icon: '🥩', level: 2 },
+    { name: '成菜', icon: '🥘', level: 2 },
+    { name: '水果', icon: '🍎', level: 2 },
+    { name: 'SOGO', icon: '🏬', level: 2 },
+    { name: '全聯', icon: '🏪', level: 2 },
+    { name: '棉花田', icon: '🌾', level: 2 },
+    { name: '其他', icon: '📦', level: 2 },
   ]},
-  { name: '會員費用', level: 1 },
-  { name: '交通', level: 1, children: [
-    { name: 'TPass', level: 2 },
-    { name: '計程車', level: 2 },
+  { name: '會員費用', icon: '💳', level: 1 },
+  { name: '交通', icon: '🚇', level: 1, children: [
+    { name: 'TPass', icon: '🎫', level: 2 },
+    { name: '計程車', icon: '🚕', level: 2 },
   ]},
-  { name: '娛樂', level: 1, children: [
-    { name: '9局職棒', level: 2 },
-    { name: 'PokemonGo', level: 2 },
-    { name: '門票', level: 2 },
-    { name: '其他', level: 2 },
+  { name: '娛樂', icon: '🎮', level: 1, children: [
+    { name: '9局職棒', icon: '⚾', level: 2 },
+    { name: 'PokemonGo', icon: '🎯', level: 2 },
+    { name: '門票', icon: '🎟️', level: 2 },
+    { name: '其他', icon: '🎪', level: 2 },
   ]},
-  { name: '醫療', level: 1 },
-  { name: '球卡', level: 1, children: [
-    { name: '寄件費', level: 2 },
-    { name: 'Y拍手續費', level: 2 },
-    { name: '福袋', level: 2 },
-    { name: '買卡', level: 2 },
-    { name: '其他', level: 2 },
+  { name: '醫療', icon: '🏥', level: 1 },
+  { name: '球卡', icon: '⚾', level: 1, children: [
+    { name: '寄件費', icon: '📮', level: 2 },
+    { name: 'Y拍手續費', icon: '💰', level: 2 },
+    { name: '福袋', icon: '🎁', level: 2 },
+    { name: '買卡', icon: '🃏', level: 2 },
+    { name: '其他', icon: '📋', level: 2 },
   ]},
-  { name: '旅遊', level: 1, children: [
-    { name: '住宿', level: 2 },
-    { name: '機票', level: 2 },
+  { name: '旅遊', icon: '✈️', level: 1, children: [
+    { name: '住宿', icon: '🏨', level: 2 },
+    { name: '機票', icon: '🎫', level: 2 },
   ]},
-  { name: '衣服', level: 1 },
-  { name: '其他', level: 1 },
+  { name: '衣服', icon: '👕', level: 1 },
+  { name: '其他', icon: '📝', level: 1 },
 ] as const
 
 export const DEFAULT_INCOME_CATEGORIES = [
-  { name: '薪資', level: 1 },
-  { name: '投資', level: 1 },
-  { name: '球卡收入', level: 1 },
-  { name: '其他', level: 1 },
+  { name: '薪資', icon: '💵', level: 1 },
+  { name: '投資', icon: '📈', level: 1 },
+  { name: '球卡收入', icon: '💎', level: 1 },
+  { name: '其他', icon: '💰', level: 1 },
 ] as const
 
 // 輔助類型

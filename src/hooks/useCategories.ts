@@ -41,6 +41,10 @@ const initializeDefaultCategories = async (userId: string) => {
         level: item.level as 1 | 2 | 3,
         order: order++
       }
+      // 包含圖示
+      if (item.icon) {
+        catData.icon = item.icon
+      }
       batch.set(docRef, catData)
 
       if (item.children) {

@@ -202,14 +202,14 @@ export function CalendarView({
       </div>
 
       {/* 日曆 */}
-      <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm overflow-hidden transition-colors">
         {/* 星期標題 */}
-        <div className="grid grid-cols-7 bg-gray-50 border-b">
+        <div className="grid grid-cols-7 bg-gray-50 dark:bg-gray-700/50 border-b dark:border-gray-700">
           {weekDays.map((day, i) => (
             <div
               key={day}
               className={`text-center text-xs font-semibold py-3 ${
-                i === 0 ? 'text-red-500' : i === 6 ? 'text-blue-500' : 'text-gray-500'
+                i === 0 ? 'text-red-500 dark:text-red-400' : i === 6 ? 'text-blue-500 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'
               }`}
             >
               {day}
@@ -234,9 +234,9 @@ export function CalendarView({
                 onClick={() => day.date && setSelectedDate(day.date)}
                 className={`
                   relative h-16 flex flex-col items-center justify-start pt-1
-                  border-b border-r border-gray-100 transition-colors
-                  ${!day.date ? 'bg-gray-50/50' : 'hover:bg-blue-50 active:bg-blue-100'}
-                  ${isSelected ? 'bg-blue-50' : ''}
+                  border-b border-r border-gray-100 dark:border-gray-700 transition-colors
+                  ${!day.date ? 'bg-gray-50/50 dark:bg-gray-800/50' : 'hover:bg-blue-50 dark:hover:bg-blue-900/30 active:bg-blue-100 dark:active:bg-blue-900/50'}
+                  ${isSelected ? 'bg-blue-50 dark:bg-blue-900/40' : ''}
                   ${weekDay === 6 ? 'border-r-0' : ''}
                 `}
               >
@@ -246,9 +246,9 @@ export function CalendarView({
                     <div className={`
                       w-7 h-7 flex items-center justify-center rounded-full text-sm font-medium
                       ${dayIsToday ? 'bg-blue-500 text-white' : ''}
-                      ${weekDay === 0 && !dayIsToday ? 'text-red-500' : ''}
-                      ${weekDay === 6 && !dayIsToday ? 'text-blue-500' : ''}
-                      ${!dayIsToday && weekDay !== 0 && weekDay !== 6 ? 'text-gray-700' : ''}
+                      ${weekDay === 0 && !dayIsToday ? 'text-red-500 dark:text-red-400' : ''}
+                      ${weekDay === 6 && !dayIsToday ? 'text-blue-500 dark:text-blue-400' : ''}
+                      ${!dayIsToday && weekDay !== 0 && weekDay !== 6 ? 'text-gray-700 dark:text-gray-300' : ''}
                     `}>
                       {day.dayNum}
                     </div>
@@ -256,12 +256,12 @@ export function CalendarView({
                     {/* 金額顯示 */}
                     <div className="flex flex-col items-center mt-0.5 w-full px-0.5">
                       {(day.expense + day.pendingSubscriptionAmount) > 0 && (
-                        <span className="text-[10px] text-red-500 font-medium leading-tight">
+                        <span className="text-[10px] text-red-500 dark:text-red-400 font-medium leading-tight">
                           -{formatAmount(day.expense + day.pendingSubscriptionAmount)}
                         </span>
                       )}
                       {day.income > 0 && (
-                        <span className="text-[10px] text-green-500 font-medium leading-tight">
+                        <span className="text-[10px] text-green-500 dark:text-green-400 font-medium leading-tight">
                           +{formatAmount(day.income)}
                         </span>
                       )}
@@ -274,7 +274,7 @@ export function CalendarView({
 
                     {/* 有資料指示點 */}
                     {hasData && !day.hasSubscription && (
-                      <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-gray-300 rounded-full" />
+                      <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-gray-300 dark:bg-gray-600 rounded-full" />
                     )}
                   </>
                 )}
@@ -284,10 +284,10 @@ export function CalendarView({
         </div>
 
         {/* 今天按鈕 */}
-        <div className="border-t p-2 flex justify-center">
+        <div className="border-t dark:border-gray-700 p-2 flex justify-center">
           <button
             onClick={goToToday}
-            className="text-sm text-blue-500 hover:text-blue-600 font-medium px-4 py-1 hover:bg-blue-50 rounded-full transition-colors"
+            className="text-sm text-blue-500 dark:text-blue-400 hover:text-blue-600 dark:hover:text-blue-300 font-medium px-4 py-1 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-full transition-colors"
           >
             回到今天
           </button>
