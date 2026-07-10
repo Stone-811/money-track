@@ -8,7 +8,6 @@ import { useDarkMode } from './hooks/useDarkMode'
 import { Layout, TabId } from './components/Layout'
 import { CategoryPieChart } from './components/CategoryPieChart'
 import { MonthlyBarChart } from './components/MonthlyBarChart'
-import { BudgetTracker } from './components/BudgetTracker'
 import { CalendarView } from './components/CalendarView'
 import { CategoryManager } from './components/CategoryManager'
 import { SubscriptionManager } from './components/SubscriptionManager'
@@ -32,8 +31,7 @@ function App() {
     transactions,
     addTransaction,
     updateTransaction,
-    deleteTransaction,
-    getMonthlyStats
+    deleteTransaction
   } = useTransactions(uid)
   const { setBudget, getBudgetForMonth } = useBudget(uid)
   const {
@@ -66,35 +64,11 @@ function App() {
     setActiveTab(tab)
   }
 
-  // 當前月份
+  // 當前月份及預算
   const currentMonth = useMemo(() => {
     const now = new Date()
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
   }, [])
-
-  // 計算未處理訂閱金額
-  const pendingSubscriptionAmount = useMemo(() => {
-    const now = new Date()
-    const today = now.getDate()
-    return subscriptions
-      .filter(s =>
-        s.isActive &&
-        s.billingDay <= today &&
-        s.lastProcessedMonth !== currentMonth
-      )
-      .reduce((sum, s) => sum + s.amount, 0)
-  }, [subscriptions, currentMonth])
-
-  // 本月統計（包含未處理訂閱）
-  const monthlyStats = useMemo(() => {
-    const stats = getMonthlyStats(currentMonth)
-    return {
-      ...stats,
-      expense: stats.expense + pendingSubscriptionAmount,
-      balance: stats.income - (stats.expense + pendingSubscriptionAmount)
-    }
-  }, [getMonthlyStats, currentMonth, pendingSubscriptionAmount])
-  // categoryStats 已移至 CategoryPieChart 內部計算
   const currentBudget = useMemo(() => getBudgetForMonth(currentMonth), [getBudgetForMonth, currentMonth])
 
   // 處理設定預算
@@ -136,16 +110,6 @@ function App() {
             <CalendarSkeleton />
           ) : (
             <>
-              {/* 預算追蹤 */}
-              <div className="mb-4">
-                <BudgetTracker
-                  currentMonth={currentMonth}
-                  budget={currentBudget}
-                  spent={monthlyStats.expense}
-                  onSetBudget={handleSetBudget}
-                />
-              </div>
-
               {pendingReminders.length > 0 && (
                 <div className="mb-4">
                   <SubscriptionReminder
@@ -159,6 +123,8 @@ function App() {
                 transactions={transactions}
                 subscriptions={subscriptions}
                 categories={categories}
+                budget={currentBudget}
+                onSetBudget={handleSetBudget}
                 onDeleteTransaction={deleteTransaction}
                 onAddTransaction={addTransaction}
                 onUpdateTransaction={updateTransaction}
