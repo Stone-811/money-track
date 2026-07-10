@@ -34,7 +34,13 @@ export function DayDetail({
   const [categoryId, setCategoryId] = useState('')
   const [categoryPath, setCategoryPath] = useState<string[]>([])
   const [description, setDescription] = useState('')
+  const [editDate, setEditDate] = useState<string>('')
   const [submitting, setSubmitting] = useState(false)
+
+  // 格式化日期為 YYYY-MM-DD
+  const formatDateForInput = (d: Date) => {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  }
 
   useEffect(() => {
     if (editingId) {
@@ -45,6 +51,7 @@ export function DayDetail({
         setCategoryId(t.categoryId)
         setCategoryPath(t.categoryPath)
         setDescription(t.description)
+        setEditDate(formatDateForInput(t.date))
         setShowForm(true)
       }
     }
@@ -87,6 +94,7 @@ export function DayDetail({
     setCategoryId('')
     setCategoryPath([])
     setDescription('')
+    setEditDate('')
     setType('expense')
   }
 
@@ -96,12 +104,15 @@ export function DayDetail({
     setSubmitting(true)
     try {
       if (editingId) {
+        // 編輯時包含日期
+        const newDate = editDate ? new Date(editDate + 'T00:00:00') : date
         await onUpdate(editingId, {
           type,
           amount: parseFloat(amount),
           categoryId,
           categoryPath,
-          description
+          description,
+          date: newDate
         })
       } else {
         await onAdd({
@@ -289,6 +300,19 @@ export function DayDetail({
                   className="w-full px-4 py-3 bg-gray-50 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:bg-white border-0 transition-all"
                 />
               </div>
+
+              {/* 日期（僅編輯時顯示） */}
+              {editingId && (
+                <div className="mb-4">
+                  <label className="block text-sm text-gray-500 mb-1">日期</label>
+                  <input
+                    type="date"
+                    value={editDate}
+                    onChange={(e) => setEditDate(e.target.value)}
+                    className="w-full px-4 py-3 bg-gray-50 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:bg-white border-0 transition-all"
+                  />
+                </div>
+              )}
 
               {/* 按鈕 */}
               <div className="flex gap-3">
