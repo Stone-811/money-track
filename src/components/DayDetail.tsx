@@ -224,15 +224,21 @@ export function DayDetail({
             </div>
           ) : (
             <div className="p-4 border-b border-gray-100">
-              {/* 編輯模式標題 */}
+              {/* 編輯模式：日期選擇 */}
               {editingId && (
-                <div className="mb-4 text-center">
-                  <span className="inline-flex items-center gap-1.5 text-sm text-blue-600 font-medium bg-blue-50 px-3 py-1 rounded-full">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                <div className="mb-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
-                    編輯記錄
-                  </span>
+                    <span className="text-sm text-gray-600">變更日期</span>
+                  </div>
+                  <input
+                    type="date"
+                    value={editDate}
+                    onChange={(e) => setEditDate(e.target.value)}
+                    className="w-full px-4 py-3 bg-blue-50 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:bg-white border-0 transition-all text-blue-600 font-medium"
+                  />
                 </div>
               )}
 
@@ -300,19 +306,6 @@ export function DayDetail({
                   className="w-full px-4 py-3 bg-gray-50 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:bg-white border-0 transition-all"
                 />
               </div>
-
-              {/* 日期（僅編輯時顯示） */}
-              {editingId && (
-                <div className="mb-4">
-                  <label className="block text-sm text-gray-500 mb-1">日期</label>
-                  <input
-                    type="date"
-                    value={editDate}
-                    onChange={(e) => setEditDate(e.target.value)}
-                    className="w-full px-4 py-3 bg-gray-50 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:bg-white border-0 transition-all"
-                  />
-                </div>
-              )}
 
               {/* 按鈕 */}
               <div className="flex gap-3">
