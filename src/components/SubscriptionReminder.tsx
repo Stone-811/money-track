@@ -14,26 +14,26 @@ export function SubscriptionReminder({
   if (pendingReminders.length === 0) return null
 
   return (
-    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+    <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800/30 rounded-lg p-4">
       <div className="flex items-center gap-2 mb-3">
         <span className="text-xl">🔔</span>
-        <h3 className="font-semibold text-yellow-800">待確認訂閱</h3>
+        <h3 className="font-semibold text-yellow-800 dark:text-yellow-200">待確認訂閱</h3>
       </div>
 
       <div className="space-y-3">
         {pendingReminders.map((sub) => (
           <div
             key={sub.id}
-            className="bg-white rounded-lg p-3 flex items-center justify-between shadow-sm"
+            className="bg-white dark:bg-gray-800 rounded-lg p-3 flex items-center justify-between shadow-sm"
           >
             <div>
-              <div className="font-medium text-gray-900">{sub.name}</div>
-              <div className="text-sm text-gray-500">
+              <div className="font-medium text-gray-900 dark:text-gray-100">{sub.name}</div>
+              <div className="text-sm text-gray-500 dark:text-gray-400">
                 {sub.categoryPath.join(' > ')} · 每月 {sub.billingDay} 日
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <span className="font-semibold text-red-600 mr-2">
+              <span className="font-semibold text-red-600 dark:text-red-400 mr-2">
                 ${sub.amount.toLocaleString()}
               </span>
               <button
@@ -44,7 +44,7 @@ export function SubscriptionReminder({
               </button>
               <button
                 onClick={() => onSkip(sub)}
-                className="px-3 py-1.5 bg-gray-200 text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-300 transition-colors"
+                className="px-3 py-1.5 bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
               >
                 跳過
               </button>

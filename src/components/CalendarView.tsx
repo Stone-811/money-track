@@ -207,129 +207,134 @@ export function CalendarView({
 
   return (
     <div className="space-y-3">
-      {/* 月份摘要卡片 */}
-      <div className="bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 rounded-2xl p-4 text-white shadow-lg">
+      {/* 月份摘要 + 預算（合併區塊） */}
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm overflow-hidden transition-colors">
         {/* 月份導航 */}
-        <div className="flex items-center justify-between mb-3">
+        <div className="bg-gradient-to-r from-blue-500 to-indigo-600 px-4 py-3 flex items-center justify-between">
           <button
             onClick={goToPrevMonth}
-            className="p-2 hover:bg-white/20 rounded-full transition-colors"
+            className="p-1.5 hover:bg-white/20 rounded-full transition-colors"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          <div className="text-center">
-            <h2 className="text-xl font-bold">{year}年{month + 1}月</h2>
-          </div>
+          <h2 className="text-lg font-bold text-white">{year}年{month + 1}月</h2>
           <button
             onClick={goToNextMonth}
-            className="p-2 hover:bg-white/20 rounded-full transition-colors"
+            className="p-1.5 hover:bg-white/20 rounded-full transition-colors"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </button>
         </div>
 
-        {/* 收支總覽 */}
-        <div className="grid grid-cols-3 gap-2 text-center">
-          <div className="bg-white/10 rounded-xl py-2 px-1">
-            <div className="text-xs opacity-80">收入</div>
-            <div className="text-base font-bold text-green-200">+{monthStats.income.toLocaleString()}</div>
+        {/* 收支數據 */}
+        <div className="px-4 py-3 grid grid-cols-3 gap-3 border-b dark:border-gray-700">
+          <div className="text-center">
+            <div className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">收入</div>
+            <div className="text-sm font-bold text-green-600 dark:text-green-400">
+              +${monthStats.income.toLocaleString()}
+            </div>
           </div>
-          <div className="bg-white/10 rounded-xl py-2 px-1">
-            <div className="text-xs opacity-80">支出</div>
-            <div className="text-base font-bold text-red-200">-{(monthStats.expense + monthStats.pendingAmount).toLocaleString()}</div>
+          <div className="text-center border-x dark:border-gray-700">
+            <div className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">支出</div>
+            <div className="text-sm font-bold text-red-600 dark:text-red-400">
+              -${(monthStats.expense + monthStats.pendingAmount).toLocaleString()}
+            </div>
           </div>
-          <div className="bg-white/10 rounded-xl py-2 px-1">
-            <div className="text-xs opacity-80">結餘</div>
-            <div className={`text-base font-bold ${monthStats.balance < 0 ? 'text-red-300' : 'text-white'}`}>
-              {monthStats.balance >= 0 ? '+' : ''}{monthStats.balance.toLocaleString()}
+          <div className="text-center">
+            <div className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">結餘</div>
+            <div className={`text-sm font-bold ${monthStats.balance < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-gray-100'}`}>
+              {monthStats.balance >= 0 ? '+' : ''}${monthStats.balance.toLocaleString()}
             </div>
           </div>
         </div>
-      </div>
 
-      {/* 預算追蹤（獨立區塊） */}
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-4 transition-colors">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">💰 月預算</h3>
-          {budgetInfo.totalBudget > 0 && !editingBudget && (
+        {/* 預算區域 */}
+        <div className="px-4 py-3">
+          {editingBudget ? (
+            <form onSubmit={handleBudgetSubmit}>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  value={budgetAmount}
+                  onChange={(e) => setBudgetAmount(e.target.value)}
+                  placeholder="輸入月預算"
+                  min="0"
+                  step="100"
+                  required
+                  autoFocus
+                  className="flex-1 px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                />
+                <button
+                  type="submit"
+                  disabled={savingBudget}
+                  className="px-3 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 disabled:opacity-50 transition-colors"
+                >
+                  {savingBudget ? '...' : '確定'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditingBudget(false)}
+                  className="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg text-sm hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                >
+                  取消
+                </button>
+              </div>
+            </form>
+          ) : budgetInfo.totalBudget > 0 ? (
+            <div className="flex items-center gap-3">
+              {/* 預算進度條 */}
+              <div className="flex-1">
+                <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1.5">
+                  <span>預算</span>
+                  <span className="font-medium">
+                    ${budgetInfo.totalSpent.toLocaleString()} / ${budgetInfo.totalBudget.toLocaleString()}
+                  </span>
+                </div>
+                <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-500 ${
+                      budgetInfo.isOverBudget ? 'bg-red-500' : budgetInfo.percentage > 80 ? 'bg-yellow-500' : 'bg-green-500'
+                    }`}
+                    style={{ width: `${budgetInfo.percentage}%` }}
+                  />
+                </div>
+              </div>
+              {/* 剩餘金額 */}
+              <div className="text-right min-w-[80px]">
+                <div className={`text-base font-bold ${budgetInfo.isOverBudget ? 'text-red-500' : 'text-green-500'}`}>
+                  {budgetInfo.isOverBudget ? '-' : ''}${Math.abs(budgetInfo.remaining).toLocaleString()}
+                </div>
+                <div className="text-[10px] text-gray-400 dark:text-gray-500">
+                  {budgetInfo.isOverBudget ? '超支' : '剩餘'}
+                </div>
+              </div>
+              {/* 編輯按鈕 */}
+              <button
+                onClick={() => { setBudgetAmount(budgetInfo.totalBudget.toString()); setEditingBudget(true) }}
+                className="p-1.5 text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
+                title="修改預算"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+              </button>
+            </div>
+          ) : (
             <button
-              onClick={() => { setBudgetAmount(budgetInfo.totalBudget.toString()); setEditingBudget(true) }}
-              className="text-xs text-blue-500 dark:text-blue-400 hover:underline"
+              onClick={() => setEditingBudget(true)}
+              className="w-full py-2 border border-dashed border-gray-200 dark:border-gray-600 rounded-lg text-xs text-gray-400 dark:text-gray-500 hover:border-blue-400 hover:text-blue-500 dark:hover:border-blue-500 dark:hover:text-blue-400 transition-colors flex items-center justify-center gap-1.5"
             >
-              修改
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              <span>設定預算</span>
             </button>
           )}
         </div>
-
-        {editingBudget ? (
-          <form onSubmit={handleBudgetSubmit}>
-            <div className="flex items-center gap-2">
-              <input
-                type="number"
-                value={budgetAmount}
-                onChange={(e) => setBudgetAmount(e.target.value)}
-                placeholder="輸入月預算"
-                min="0"
-                step="100"
-                required
-                autoFocus
-                className="flex-1 px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <button
-                type="submit"
-                disabled={savingBudget}
-                className="px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 disabled:opacity-50 transition-colors"
-              >
-                {savingBudget ? '...' : '確定'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setEditingBudget(false)}
-                className="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-              >
-                取消
-              </button>
-            </div>
-          </form>
-        ) : budgetInfo.totalBudget > 0 ? (
-          <div>
-            {/* 預算進度條 */}
-            <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
-              <span>已使用</span>
-              <span className="font-medium text-gray-700 dark:text-gray-300">
-                ${budgetInfo.totalSpent.toLocaleString()} / ${budgetInfo.totalBudget.toLocaleString()}
-              </span>
-            </div>
-            <div className="h-3 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden mb-3">
-              <div
-                className={`h-full rounded-full transition-all duration-500 ${
-                  budgetInfo.isOverBudget ? 'bg-red-500' : budgetInfo.percentage > 80 ? 'bg-yellow-500' : 'bg-green-500'
-                }`}
-                style={{ width: `${budgetInfo.percentage}%` }}
-              />
-            </div>
-            {/* 剩餘預算 */}
-            <div className={`text-center text-lg font-bold ${
-              budgetInfo.isOverBudget ? 'text-red-500' : 'text-green-500'
-            }`}>
-              {budgetInfo.isOverBudget ? '超支 ' : '剩餘 '}${Math.abs(budgetInfo.remaining).toLocaleString()}
-            </div>
-          </div>
-        ) : (
-          <button
-            onClick={() => setEditingBudget(true)}
-            className="w-full py-3 border-2 border-dashed border-gray-200 dark:border-gray-600 rounded-xl text-gray-400 dark:text-gray-500 hover:border-blue-400 hover:text-blue-500 dark:hover:border-blue-500 dark:hover:text-blue-400 transition-colors flex items-center justify-center gap-2"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            <span>設定本月預算</span>
-          </button>
-        )}
       </div>
 
       {/* 日曆 */}

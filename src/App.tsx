@@ -53,7 +53,8 @@ function App() {
     updateSubscription,
     deleteSubscription,
     confirmReminder,
-    skipReminder
+    skipReminder,
+    retrySubscription
   } = useSubscriptions(uid, addTransaction, transactions)
 
   const [activeTab, setActiveTab] = useState<TabId>('calendar')
@@ -147,10 +148,12 @@ function App() {
       {activeTab === 'subscription' && (
         <SubscriptionManager
           subscriptions={subscriptions}
+          transactions={transactions}
           categories={categories}
           addSubscription={addSubscription}
           updateSubscription={updateSubscription}
           deleteSubscription={deleteSubscription}
+          retrySubscription={retrySubscription}
           getChildren={getChildren}
           getCategoryPath={getCategoryPath}
         />

@@ -1,28 +1,55 @@
-import { useState } from 'react'
-import { Subscription, SubscriptionInput, Category, TransactionType } from '../types'
+import { useState, useMemo } from 'react'
+import { Subscription, SubscriptionInput, Category, TransactionType, Transaction } from '../types'
 import { CategoryPicker } from './CategoryPicker'
 
 interface SubscriptionManagerProps {
   subscriptions: Subscription[]
+  transactions: Transaction[]
   categories: Category[]
   addSubscription: (input: SubscriptionInput) => Promise<void>
   updateSubscription: (id: string, input: Partial<SubscriptionInput>) => Promise<void>
   deleteSubscription: (id: string) => Promise<void>
+  retrySubscription: (sub: Subscription) => Promise<boolean | undefined>
   getChildren: (parentId: string | null, type: TransactionType) => Category[]
   getCategoryPath: (categoryId: string) => string[]
 }
 
 export function SubscriptionManager({
   subscriptions,
+  transactions,
   categories,
   addSubscription,
   updateSubscription,
   deleteSubscription,
+  retrySubscription,
   getChildren,
   getCategoryPath
 }: SubscriptionManagerProps) {
   const [showForm, setShowForm] = useState(false)
   const [editingSub, setEditingSub] = useState<Subscription | null>(null)
+  const [retrying, setRetrying] = useState<string | null>(null)
+
+  // 檢查訂閱本月是否已有交易記錄
+  const now = new Date()
+  const currentMonth = now.getMonth()
+  const currentYear = now.getFullYear()
+  const today = now.getDate()
+
+  const subscriptionStatus = useMemo(() => {
+    const status: Record<string, { hasTransaction: boolean; isPending: boolean }> = {}
+
+    for (const sub of subscriptions) {
+      const hasTransaction = transactions.some(t =>
+        t.subscriptionId === sub.id &&
+        t.date.getFullYear() === currentYear &&
+        t.date.getMonth() === currentMonth
+      )
+      // 已過扣款日但沒有交易記錄 = 待補記
+      const isPending = sub.isActive && sub.billingDay <= today && !hasTransaction
+      status[sub.id] = { hasTransaction, isPending }
+    }
+    return status
+  }, [subscriptions, transactions, currentMonth, currentYear, today])
 
   // Form state
   const [name, setName] = useState('')
@@ -96,6 +123,16 @@ export function SubscriptionManager({
     setCategoryPath(path)
   }
 
+  const handleRetry = async (sub: Subscription) => {
+    if (retrying) return
+    setRetrying(sub.id)
+    try {
+      await retrySubscription(sub)
+    } finally {
+      setRetrying(null)
+    }
+  }
+
   return (
     <div className="space-y-4">
       {/* 訂閱列表 */}
@@ -116,68 +153,99 @@ export function SubscriptionManager({
           </div>
         ) : (
           <div className="divide-y dark:divide-gray-700">
-            {subscriptions.map((sub) => (
-              <div
-                key={sub.id}
-                className={`p-4 flex items-center justify-between ${
-                  !sub.isActive ? 'opacity-50' : ''
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 flex items-center justify-center font-medium">
-                    {sub.billingDay}
-                  </div>
-                  <div>
-                    <div className="font-medium text-gray-900 dark:text-gray-100">{sub.name}</div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400">
-                      {sub.categoryPath.join(' > ')}
-                      <span className="mx-1">·</span>
-                      {sub.mode === 'auto' ? '自動記帳' : '手動確認'}
+            {subscriptions.map((sub) => {
+              const status = subscriptionStatus[sub.id]
+              const showRetryButton = status?.isPending && sub.mode === 'auto'
+
+              return (
+                <div
+                  key={sub.id}
+                  className={`p-4 ${!sub.isActive ? 'opacity-50' : ''}`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center font-medium ${
+                        status?.hasTransaction
+                          ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
+                          : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
+                      }`}>
+                        {sub.billingDay}
+                      </div>
+                      <div>
+                        <div className="font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                          {sub.name}
+                          {status?.hasTransaction && (
+                            <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 px-1.5 py-0.5 rounded">
+                              已記帳
+                            </span>
+                          )}
+                          {showRetryButton && (
+                            <span className="text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 px-1.5 py-0.5 rounded">
+                              待補記
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400">
+                          {sub.categoryPath.join(' > ')}
+                          <span className="mx-1">·</span>
+                          {sub.mode === 'auto' ? '自動記帳' : '手動確認'}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-red-600 dark:text-red-400">
+                        ${sub.amount.toLocaleString()}
+                      </span>
+                      {showRetryButton && (
+                        <button
+                          onClick={() => handleRetry(sub)}
+                          disabled={retrying === sub.id}
+                          className="px-2 py-1 text-xs bg-yellow-500 text-white rounded font-medium hover:bg-yellow-600 disabled:opacity-50 transition-colors focus:outline-none"
+                          title="補記本月"
+                        >
+                          {retrying === sub.id ? '...' : '補記'}
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handleToggleActive(sub)}
+                        className={`p-1.5 rounded transition-colors focus:outline-none ${
+                          sub.isActive
+                            ? 'text-green-500 hover:bg-green-50 dark:hover:bg-green-900/30'
+                            : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                        }`}
+                        title={sub.isActive ? '停用' : '啟用'}
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          {sub.isActive ? (
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          ) : (
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          )}
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => handleEdit(sub)}
+                        className="p-1.5 text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors focus:outline-none"
+                        title="編輯"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => handleDelete(sub)}
+                        className="p-1.5 text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors focus:outline-none"
+                        title="刪除"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className="font-semibold text-red-600 dark:text-red-400">
-                    ${sub.amount.toLocaleString()}
-                  </span>
-                  <button
-                    onClick={() => handleToggleActive(sub)}
-                    className={`p-1.5 rounded transition-colors focus:outline-none ${
-                      sub.isActive
-                        ? 'text-green-500 hover:bg-green-50 dark:hover:bg-green-900/30'
-                        : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-                    }`}
-                    title={sub.isActive ? '停用' : '啟用'}
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      {sub.isActive ? (
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      ) : (
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      )}
-                    </svg>
-                  </button>
-                  <button
-                    onClick={() => handleEdit(sub)}
-                    className="p-1.5 text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors focus:outline-none"
-                    title="編輯"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
-                  </button>
-                  <button
-                    onClick={() => handleDelete(sub)}
-                    className="p-1.5 text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors focus:outline-none"
-                    title="刪除"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
 

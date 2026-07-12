@@ -96,20 +96,27 @@ export function useSubscriptions(
           // 標記為處理中
           processingRef.current.add(processingKey)
 
-          // 自動記帳
-          await addTransaction({
-            type: 'expense',
-            amount: sub.amount,
-            categoryId: sub.categoryId,
-            categoryPath: sub.categoryPath,
-            description: `${sub.name} (自動)`,
-            date: new Date(now.getFullYear(), now.getMonth(), sub.billingDay),
-            subscriptionId: sub.id
-          })
+          try {
+            // 自動記帳
+            await addTransaction({
+              type: 'expense',
+              amount: sub.amount,
+              categoryId: sub.categoryId,
+              categoryPath: sub.categoryPath,
+              description: `${sub.name} (自動)`,
+              date: new Date(now.getFullYear(), now.getMonth(), sub.billingDay),
+              subscriptionId: sub.id
+            })
 
-          // 更新 lastProcessedMonth
-          const docRef = doc(db, 'users', uid, 'subscriptions', sub.id)
-          await updateDoc(docRef, { lastProcessedMonth: currentMonth })
+            // 只有成功才更新 lastProcessedMonth
+            const docRef = doc(db, 'users', uid, 'subscriptions', sub.id)
+            await updateDoc(docRef, { lastProcessedMonth: currentMonth })
+            console.log(`✅ 自動記帳成功: ${sub.name} $${sub.amount}`)
+          } catch (error) {
+            console.error(`❌ 自動記帳失敗: ${sub.name}`, error)
+            // 移除處理中標記，允許下次重試
+            processingRef.current.delete(processingKey)
+          }
         } else {
           // 提醒模式
           reminders.push(sub)
@@ -172,23 +179,29 @@ export function useSubscriptions(
     const now = new Date()
     const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
 
-    // 新增交易
-    await addTransaction({
-      type: 'expense',
-      amount: sub.amount,
-      categoryId: sub.categoryId,
-      categoryPath: sub.categoryPath,
-      description: sub.name,
-      date: new Date(now.getFullYear(), now.getMonth(), sub.billingDay),
-      subscriptionId: sub.id
-    })
+    try {
+      // 新增交易
+      await addTransaction({
+        type: 'expense',
+        amount: sub.amount,
+        categoryId: sub.categoryId,
+        categoryPath: sub.categoryPath,
+        description: sub.name,
+        date: new Date(now.getFullYear(), now.getMonth(), sub.billingDay),
+        subscriptionId: sub.id
+      })
 
-    // 更新 lastProcessedMonth
-    const docRef = doc(db, 'users', uid, 'subscriptions', sub.id)
-    await updateDoc(docRef, { lastProcessedMonth: currentMonth })
+      // 只有成功才更新 lastProcessedMonth
+      const docRef = doc(db, 'users', uid, 'subscriptions', sub.id)
+      await updateDoc(docRef, { lastProcessedMonth: currentMonth })
 
-    // 從待處理列表移除
-    setPendingReminders(prev => prev.filter(s => s.id !== sub.id))
+      // 從待處理列表移除
+      setPendingReminders(prev => prev.filter(s => s.id !== sub.id))
+      console.log(`✅ 手動記帳成功: ${sub.name} $${sub.amount}`)
+    } catch (error) {
+      console.error(`❌ 手動記帳失敗: ${sub.name}`, error)
+      throw error  // 重新拋出讓 UI 可以處理
+    }
   }, [uid, addTransaction])
 
   // 跳過提醒
@@ -206,6 +219,37 @@ export function useSubscriptions(
     setPendingReminders(prev => prev.filter(s => s.id !== sub.id))
   }, [uid])
 
+  // 手動補記訂閱（用於修復漏記的情況）
+  const retrySubscription = useCallback(async (sub: Subscription) => {
+    if (!uid) return
+
+    const now = new Date()
+    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+
+    try {
+      // 新增交易
+      await addTransaction({
+        type: 'expense',
+        amount: sub.amount,
+        categoryId: sub.categoryId,
+        categoryPath: sub.categoryPath,
+        description: `${sub.name} (補記)`,
+        date: new Date(now.getFullYear(), now.getMonth(), sub.billingDay),
+        subscriptionId: sub.id
+      })
+
+      // 更新 lastProcessedMonth
+      const docRef = doc(db, 'users', uid, 'subscriptions', sub.id)
+      await updateDoc(docRef, { lastProcessedMonth: currentMonth })
+
+      console.log(`✅ 補記成功: ${sub.name} $${sub.amount}`)
+      return true
+    } catch (error) {
+      console.error(`❌ 補記失敗: ${sub.name}`, error)
+      throw error
+    }
+  }, [uid, addTransaction])
+
   return {
     subscriptions,
     loading,
@@ -214,6 +258,7 @@ export function useSubscriptions(
     updateSubscription,
     deleteSubscription,
     confirmReminder,
-    skipReminder
+    skipReminder,
+    retrySubscription
   }
 }
