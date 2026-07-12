@@ -376,9 +376,9 @@ export function CalendarView({
   return (
     <div className="space-y-3">
       {/* 月份摘要 + 預算（合併區塊） */}
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm overflow-hidden transition-colors">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-md overflow-hidden transition-all duration-300 border border-gray-100 dark:border-gray-700">
         {/* 月份導航 */}
-        <div className="bg-gradient-to-r from-blue-500 to-indigo-600 px-4 py-3 flex items-center justify-between">
+        <div className="bg-gradient-to-r from-indigo-500 to-violet-600 px-4 py-3 flex items-center justify-between">
           <button
             onClick={goToPrevMonth}
             className="p-1.5 hover:bg-white/20 rounded-full transition-colors"
@@ -399,7 +399,7 @@ export function CalendarView({
         </div>
 
         {/* 收支數據 */}
-        <div className="px-4 py-3 grid grid-cols-3 gap-3 border-b dark:border-gray-700">
+        <div className="px-4 py-3 grid grid-cols-3 gap-3 border-b border-gray-100 dark:border-gray-700">
           <div className="text-center">
             <div className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">收入</div>
             <div className="text-sm font-bold text-green-600 dark:text-green-400">
@@ -434,12 +434,12 @@ export function CalendarView({
                   step="100"
                   required
                   autoFocus
-                  className="flex-1 px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="flex-1 px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                 />
                 <button
                   type="submit"
                   disabled={savingBudget}
-                  className="px-3 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 disabled:opacity-50 transition-colors"
+                  className="px-3 py-2 bg-indigo-500 text-white rounded-lg text-sm font-medium hover:bg-indigo-600 disabled:opacity-50 transition-colors"
                 >
                   {savingBudget ? '...' : '確定'}
                 </button>
@@ -494,7 +494,7 @@ export function CalendarView({
           ) : (
             <button
               onClick={() => setEditingBudget(true)}
-              className="w-full py-2 border border-dashed border-gray-200 dark:border-gray-600 rounded-lg text-xs text-gray-400 dark:text-gray-500 hover:border-blue-400 hover:text-blue-500 dark:hover:border-blue-500 dark:hover:text-blue-400 transition-colors flex items-center justify-center gap-1.5"
+              className="w-full py-2 border border-dashed border-gray-200 dark:border-gray-600 rounded-lg text-xs text-gray-400 dark:text-gray-500 hover:border-indigo-400 hover:text-indigo-500 dark:hover:border-indigo-500 dark:hover:text-indigo-400 transition-colors flex items-center justify-center gap-1.5"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -506,7 +506,7 @@ export function CalendarView({
       </div>
 
       {/* 日曆 */}
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm overflow-hidden transition-colors">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-md overflow-hidden transition-all duration-300 border border-gray-100 dark:border-gray-700">
         {/* 星期標題 */}
         <div className="grid grid-cols-7 bg-gray-50 dark:bg-gray-700/50 border-b dark:border-gray-700">
           {weekDays.map((day, i) => (
@@ -538,9 +538,9 @@ export function CalendarView({
                 onClick={() => day.date && setSelectedDate(day.date)}
                 className={`
                   relative h-16 flex flex-col items-center justify-start pt-1
-                  border-b border-r border-gray-100 dark:border-gray-700 transition-colors
-                  ${!day.date ? 'bg-gray-50/50 dark:bg-gray-800/50' : 'hover:bg-blue-50 dark:hover:bg-blue-900/30 active:bg-blue-100 dark:active:bg-blue-900/50'}
-                  ${isSelected ? 'bg-blue-50 dark:bg-blue-900/40' : ''}
+                  border-b border-r border-gray-100 dark:border-gray-700 transition-all duration-200
+                  ${!day.date ? 'bg-gray-50/50 dark:bg-gray-800/50' : 'hover:bg-indigo-50 dark:hover:bg-indigo-900/30 active:bg-indigo-100 dark:active:bg-indigo-900/50'}
+                  ${isSelected ? 'bg-indigo-50 dark:bg-indigo-900/40' : ''}
                   ${weekDay === 6 ? 'border-r-0' : ''}
                 `}
               >
@@ -548,10 +548,10 @@ export function CalendarView({
                   <>
                     {/* 日期數字 */}
                     <div className={`
-                      w-7 h-7 flex items-center justify-center rounded-full text-sm font-medium
-                      ${dayIsToday ? 'bg-blue-500 text-white' : ''}
-                      ${weekDay === 0 && !dayIsToday ? 'text-red-500 dark:text-red-400' : ''}
-                      ${weekDay === 6 && !dayIsToday ? 'text-blue-500 dark:text-blue-400' : ''}
+                      w-7 h-7 flex items-center justify-center rounded-full text-sm font-medium transition-all duration-200
+                      ${dayIsToday ? 'bg-indigo-500 text-white shadow-sm' : ''}
+                      ${weekDay === 0 && !dayIsToday ? 'text-rose-500 dark:text-rose-400' : ''}
+                      ${weekDay === 6 && !dayIsToday ? 'text-indigo-500 dark:text-indigo-400' : ''}
                       ${!dayIsToday && weekDay !== 0 && weekDay !== 6 ? 'text-gray-700 dark:text-gray-300' : ''}
                     `}>
                       {day.dayNum}
@@ -588,10 +588,10 @@ export function CalendarView({
         </div>
 
         {/* 今天按鈕 */}
-        <div className="border-t dark:border-gray-700 p-2 flex justify-center">
+        <div className="border-t border-gray-100 dark:border-gray-700 p-2 flex justify-center">
           <button
             onClick={goToToday}
-            className="text-sm text-blue-500 dark:text-blue-400 hover:text-blue-600 dark:hover:text-blue-300 font-medium px-4 py-1 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-full transition-colors"
+            className="text-sm text-indigo-500 dark:text-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-300 font-medium px-4 py-1.5 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-full transition-all duration-200 active:scale-95"
           >
             回到今天
           </button>
@@ -600,9 +600,9 @@ export function CalendarView({
 
       {/* 選中日期的交易紀錄 */}
       {selectedDate && selectedDayData && (
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm overflow-hidden transition-colors">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-md overflow-hidden transition-all duration-300 border border-gray-100 dark:border-gray-700 animate-fadeIn">
           {/* 日期標題 */}
-          <div className="px-4 py-3 border-b dark:border-gray-700 flex items-center justify-between">
+          <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between bg-gradient-to-r from-gray-50/50 to-transparent dark:from-gray-700/30">
             <div className="flex items-center gap-2">
               <button
                 onClick={() => {
@@ -644,10 +644,10 @@ export function CalendarView({
 
           {/* 新增按鈕或表單 */}
           {!showForm ? (
-            <div className="p-3 border-b dark:border-gray-700">
+            <div className="p-3 border-b border-gray-100 dark:border-gray-700">
               <button
                 onClick={() => { resetForm(); setShowForm(true) }}
-                className="w-full py-2.5 bg-blue-500 text-white rounded-xl font-medium hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"
+                className="w-full py-2.5 bg-gradient-to-r from-indigo-500 to-violet-600 text-white rounded-xl font-medium hover:from-indigo-600 hover:to-violet-700 transition-all duration-200 flex items-center justify-center gap-2 shadow-sm active:scale-[0.98]"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -656,7 +656,7 @@ export function CalendarView({
               </button>
             </div>
           ) : (
-            <div className="p-3 border-b dark:border-gray-700 space-y-3">
+            <div className="p-3 border-b border-gray-100 dark:border-gray-700 space-y-3">
               {/* 語音按鈕 + 類型切換 */}
               <div className="flex items-center gap-2">
                 <div className="flex-1 flex bg-gray-100 dark:bg-gray-700 p-1 rounded-xl">
@@ -717,7 +717,7 @@ export function CalendarView({
                   onChange={(e) => setFormAmount(e.target.value)}
                   placeholder="0"
                   min="0"
-                  className="w-full pl-8 pr-3 py-2.5 text-lg font-bold bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 border-0 transition-all"
+                  className="w-full pl-8 pr-3 py-2.5 text-lg font-bold bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-indigo-500 border-0 transition-all"
                   autoFocus
                 />
               </div>
@@ -740,7 +740,7 @@ export function CalendarView({
                 value={formDescription}
                 onChange={(e) => setFormDescription(e.target.value)}
                 placeholder="備註（選填）"
-                className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 rounded-xl focus:ring-2 focus:ring-blue-500 border-0 text-sm"
+                className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 rounded-xl focus:ring-2 focus:ring-indigo-500 border-0 text-sm"
               />
 
               {/* 按鈕 */}
@@ -748,7 +748,7 @@ export function CalendarView({
                 <button
                   onClick={handleSubmit}
                   disabled={formSubmitting || !formAmount || !formCategoryId}
-                  className="flex-1 py-2.5 bg-blue-500 text-white rounded-xl font-medium hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="flex-1 py-2.5 bg-gradient-to-r from-indigo-500 to-violet-600 text-white rounded-xl font-medium hover:from-indigo-600 hover:to-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 active:scale-[0.98]"
                 >
                   {formSubmitting ? '...' : editingId ? '更新' : '確定'}
                 </button>
@@ -778,13 +778,13 @@ export function CalendarView({
                 <div
                   key={t.id}
                   onClick={() => handleEdit(t)}
-                  className={`px-4 py-3 flex items-center gap-3 cursor-pointer active:bg-gray-50 dark:active:bg-gray-700 transition-colors ${
-                    editingId === t.id ? 'bg-blue-50 dark:bg-blue-900/30' : ''
+                  className={`px-4 py-3 flex items-center gap-3 cursor-pointer active:bg-gray-50 dark:active:bg-gray-700 transition-all duration-200 ${
+                    editingId === t.id ? 'bg-indigo-50 dark:bg-indigo-900/30' : ''
                   }`}
                 >
                   {/* 圖標 */}
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white text-sm ${
-                    t.type === 'expense' ? 'bg-red-500' : 'bg-green-500'
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white text-sm shadow-sm ${
+                    t.type === 'expense' ? 'bg-gradient-to-br from-rose-400 to-rose-600' : 'bg-gradient-to-br from-emerald-400 to-emerald-600'
                   }`}>
                     {categories.find(c => c.id === t.categoryId)?.icon || t.categoryPath?.[0]?.charAt(0) || (t.type === 'expense' ? '-' : '+')}
                   </div>
