@@ -69,8 +69,16 @@ src/
 
 ## UI 設計
 - **日曆頁面**：月份摘要（收支/預算）與日曆合併顯示，交易紀錄內嵌於日曆下方
-- **配色規則**：藍色主色、紅色支出、綠色收入
-- **圓角層級**：外層 `rounded-2xl`、內部 `rounded-lg`
+- **配色規則**：
+  - 主色調：Indigo/Violet 漸層（`from-indigo-500 to-violet-600`）
+  - 支出：Rose/Red（`rose-500` / `red-500`）
+  - 收入：Emerald/Green（`emerald-500` / `green-500`）
+- **圓角層級**：外層 `rounded-2xl`、內部 `rounded-xl` / `rounded-lg`
+- **卡片樣式**：`shadow-md border border-gray-100 dark:border-gray-700`
+- **動畫**：
+  - 頁面切換：fadeIn（0.3s ease-out）
+  - 圓餅圖切換：淡出(150ms) + 新資料動畫(600ms)
+  - 按鈕互動：`active:scale-[0.98]` / `active:scale-95`
 
 ## 注意事項
 - Firestore 不接受 `undefined` 值，寫入前需過濾
