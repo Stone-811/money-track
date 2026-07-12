@@ -1,6 +1,6 @@
-import { useState, useMemo, useEffect, FormEvent } from 'react'
+import { useState, useMemo, useEffect, FormEvent, useRef } from 'react'
 import { Transaction, Subscription, TransactionInput, TransactionType, Category, Budget } from '../types'
-import { DayDetail } from './DayDetail'
+import { CategoryPicker } from './CategoryPicker'
 
 interface CalendarViewProps {
   transactions: Transaction[]
@@ -28,10 +28,22 @@ export function CalendarView({
   getCategoryPath
 }: CalendarViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date())
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null)
+  const [selectedDate, setSelectedDate] = useState<Date | null>(new Date()) // 預設選中今天
   const [editingBudget, setEditingBudget] = useState(false)
   const [budgetAmount, setBudgetAmount] = useState('')
   const [savingBudget, setSavingBudget] = useState(false)
+
+  // 交易表單 state
+  const [showForm, setShowForm] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [formType, setFormType] = useState<TransactionType>('expense')
+  const [formAmount, setFormAmount] = useState('')
+  const [formCategoryId, setFormCategoryId] = useState('')
+  const [formCategoryPath, setFormCategoryPath] = useState<string[]>([])
+  const [formDescription, setFormDescription] = useState('')
+  const [formSubmitting, setFormSubmitting] = useState(false)
+  const [isListening, setIsListening] = useState(false)
+  const recognitionRef = useRef<any>(null)
 
   const year = currentDate.getFullYear()
   const month = currentDate.getMonth()
@@ -203,6 +215,162 @@ export function CalendarView({
       return `${(amount / 1000).toFixed(0)}k`
     }
     return amount.toLocaleString()
+  }
+
+  // 交易表單函數
+  const resetForm = () => {
+    setShowForm(false)
+    setEditingId(null)
+    setFormAmount('')
+    setFormCategoryId('')
+    setFormCategoryPath([])
+    setFormDescription('')
+    setFormType('expense')
+    stopListening()
+  }
+
+  const handleEdit = (t: Transaction) => {
+    setEditingId(t.id)
+    setFormType(t.type)
+    setFormAmount(t.amount.toString())
+    setFormCategoryId(t.categoryId)
+    setFormCategoryPath(t.categoryPath)
+    setFormDescription(t.description)
+    setShowForm(true)
+  }
+
+  const handleCategorySelect = (id: string, path: string[]) => {
+    setFormCategoryId(id)
+    setFormCategoryPath(path)
+  }
+
+  const handleDelete = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation()
+    if (window.confirm('確定要刪除這筆記錄嗎？')) {
+      onDeleteTransaction(id)
+    }
+  }
+
+  const handleSubmit = async () => {
+    if (!formAmount || !formCategoryId || !selectedDate) return
+
+    setFormSubmitting(true)
+    try {
+      if (editingId) {
+        await onUpdateTransaction(editingId, {
+          type: formType,
+          amount: parseFloat(formAmount),
+          categoryId: formCategoryId,
+          categoryPath: formCategoryPath,
+          description: formDescription
+        })
+      } else {
+        await onAddTransaction({
+          type: formType,
+          amount: parseFloat(formAmount),
+          categoryId: formCategoryId,
+          categoryPath: formCategoryPath,
+          description: formDescription,
+          date: selectedDate
+        })
+      }
+      if ('vibrate' in navigator) {
+        navigator.vibrate(50)
+      }
+      resetForm()
+    } finally {
+      setFormSubmitting(false)
+    }
+  }
+
+  // 語音輸入
+  const startListening = () => {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      alert('您的瀏覽器不支援語音輸入')
+      return
+    }
+
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    const recognition = new SpeechRecognition()
+    recognitionRef.current = recognition
+
+    recognition.lang = 'zh-TW'
+    recognition.continuous = false
+    recognition.interimResults = false
+
+    recognition.onstart = () => setIsListening(true)
+    recognition.onend = () => setIsListening(false)
+    recognition.onerror = () => setIsListening(false)
+
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript
+      parseVoiceInput(transcript)
+    }
+
+    recognition.start()
+  }
+
+  const stopListening = () => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop()
+    }
+    setIsListening(false)
+  }
+
+  const parseVoiceInput = (text: string) => {
+    const numberMatch = text.match(/(\d+)/)
+    if (numberMatch) {
+      setFormAmount(numberMatch[1])
+    }
+
+    const expenseCategories = categories.filter(c => c.type === formType)
+    let matchedCategory: Category | null = null
+    let matchedCategoryName = ''
+
+    const subCategories = expenseCategories.filter(c => c.level === 2)
+    for (const cat of subCategories) {
+      if (text.includes(cat.name)) {
+        matchedCategory = cat
+        matchedCategoryName = cat.name
+        break
+      }
+    }
+
+    if (!matchedCategory) {
+      const mainCategories = expenseCategories.filter(c => c.level === 1)
+      for (const cat of mainCategories) {
+        if (text.includes(cat.name)) {
+          matchedCategory = cat
+          matchedCategoryName = cat.name
+          break
+        }
+      }
+    }
+
+    if (matchedCategory) {
+      setFormCategoryId(matchedCategory.id)
+      setFormCategoryPath(getCategoryPath(matchedCategory.id))
+    }
+
+    let cleanText = text
+      .replace(/\d+/g, '')
+      .replace(/[元塊錢块圓]*/g, '')
+      .replace(/花了|花|共|總共|一共/g, '')
+
+    if (matchedCategoryName) {
+      cleanText = cleanText.replace(matchedCategoryName, '')
+    }
+
+    cleanText = cleanText.trim()
+    if (cleanText) {
+      setFormDescription(cleanText)
+    }
+  }
+
+  // 格式化選中日期
+  const formatSelectedDate = (d: Date) => {
+    const weekDays = ['週日', '週一', '週二', '週三', '週四', '週五', '週六']
+    return `${d.getMonth() + 1}/${d.getDate()} ${weekDays[d.getDay()]}`
   }
 
   return (
@@ -430,20 +598,228 @@ export function CalendarView({
         </div>
       </div>
 
-      {/* 日期明細彈窗 */}
+      {/* 選中日期的交易紀錄 */}
       {selectedDate && selectedDayData && (
-        <DayDetail
-          date={selectedDate}
-          transactions={selectedDayData.transactions}
-          categories={categories}
-          onClose={() => setSelectedDate(null)}
-          onDelete={onDeleteTransaction}
-          onAdd={onAddTransaction}
-          onUpdate={onUpdateTransaction}
-          getChildren={getChildren}
-          getCategoryPath={getCategoryPath}
-          onDateChange={handleDateChange}
-        />
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm overflow-hidden transition-colors">
+          {/* 日期標題 */}
+          <div className="px-4 py-3 border-b dark:border-gray-700 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  const newDate = new Date(selectedDate)
+                  newDate.setDate(newDate.getDate() - 1)
+                  handleDateChange(newDate)
+                }}
+                className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+              >
+                <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <span className="font-semibold text-gray-900 dark:text-gray-100">
+                {formatSelectedDate(selectedDate)}
+              </span>
+              <button
+                onClick={() => {
+                  const newDate = new Date(selectedDate)
+                  newDate.setDate(newDate.getDate() + 1)
+                  handleDateChange(newDate)
+                }}
+                className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+              >
+                <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+            <div className="flex items-center gap-3 text-sm">
+              {selectedDayData.income > 0 && (
+                <span className="text-green-600 dark:text-green-400 font-medium">+${selectedDayData.income.toLocaleString()}</span>
+              )}
+              {selectedDayData.expense > 0 && (
+                <span className="text-red-600 dark:text-red-400 font-medium">-${selectedDayData.expense.toLocaleString()}</span>
+              )}
+            </div>
+          </div>
+
+          {/* 新增按鈕或表單 */}
+          {!showForm ? (
+            <div className="p-3 border-b dark:border-gray-700">
+              <button
+                onClick={() => { resetForm(); setShowForm(true) }}
+                className="w-full py-2.5 bg-blue-500 text-white rounded-xl font-medium hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                新增記錄
+              </button>
+            </div>
+          ) : (
+            <div className="p-3 border-b dark:border-gray-700 space-y-3">
+              {/* 語音按鈕 + 類型切換 */}
+              <div className="flex items-center gap-2">
+                <div className="flex-1 flex bg-gray-100 dark:bg-gray-700 p-1 rounded-xl">
+                  <button
+                    type="button"
+                    onClick={() => { setFormType('expense'); setFormCategoryId(''); setFormCategoryPath([]) }}
+                    className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
+                      formType === 'expense'
+                        ? 'bg-white dark:bg-gray-600 text-red-500 dark:text-red-400 shadow-sm'
+                        : 'text-gray-500 dark:text-gray-400'
+                    }`}
+                  >
+                    支出
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setFormType('income'); setFormCategoryId(''); setFormCategoryPath([]) }}
+                    className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
+                      formType === 'income'
+                        ? 'bg-white dark:bg-gray-600 text-green-500 dark:text-green-400 shadow-sm'
+                        : 'text-gray-500 dark:text-gray-400'
+                    }`}
+                  >
+                    收入
+                  </button>
+                </div>
+                <button
+                  onClick={isListening ? stopListening : startListening}
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
+                    isListening
+                      ? 'bg-red-500 text-white animate-pulse'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                  title="語音輸入"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* 語音提示 */}
+              {isListening && (
+                <div className="p-2 bg-red-50 dark:bg-red-900/30 rounded-lg text-center">
+                  <span className="text-sm text-red-600 dark:text-red-400 flex items-center justify-center gap-2">
+                    <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                    說出分類和金額，如「午餐 120」
+                  </span>
+                </div>
+              )}
+
+              {/* 金額 */}
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-lg font-bold text-gray-400">$</span>
+                <input
+                  type="number"
+                  value={formAmount}
+                  onChange={(e) => setFormAmount(e.target.value)}
+                  placeholder="0"
+                  min="0"
+                  className="w-full pl-8 pr-3 py-2.5 text-lg font-bold bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 border-0 transition-all"
+                  autoFocus
+                />
+              </div>
+
+              {/* 分類 */}
+              <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-3">
+                <CategoryPicker
+                  type={formType}
+                  categories={categories}
+                  selectedId={formCategoryId}
+                  onSelect={handleCategorySelect}
+                  getChildren={getChildren}
+                  getCategoryPath={getCategoryPath}
+                />
+              </div>
+
+              {/* 備註 */}
+              <input
+                type="text"
+                value={formDescription}
+                onChange={(e) => setFormDescription(e.target.value)}
+                placeholder="備註（選填）"
+                className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 rounded-xl focus:ring-2 focus:ring-blue-500 border-0 text-sm"
+              />
+
+              {/* 按鈕 */}
+              <div className="flex gap-2">
+                <button
+                  onClick={handleSubmit}
+                  disabled={formSubmitting || !formAmount || !formCategoryId}
+                  className="flex-1 py-2.5 bg-blue-500 text-white rounded-xl font-medium hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {formSubmitting ? '...' : editingId ? '更新' : '確定'}
+                </button>
+                <button
+                  onClick={resetForm}
+                  className="px-4 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                >
+                  取消
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* 交易列表 */}
+          {selectedDayData.transactions.length === 0 ? (
+            <div className="py-8 text-center">
+              <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-2">
+                <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+              </div>
+              <p className="text-sm text-gray-400">當日無交易記錄</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-100 dark:divide-gray-700">
+              {selectedDayData.transactions.map((t) => (
+                <div
+                  key={t.id}
+                  onClick={() => handleEdit(t)}
+                  className={`px-4 py-3 flex items-center gap-3 cursor-pointer active:bg-gray-50 dark:active:bg-gray-700 transition-colors ${
+                    editingId === t.id ? 'bg-blue-50 dark:bg-blue-900/30' : ''
+                  }`}
+                >
+                  {/* 圖標 */}
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white text-sm ${
+                    t.type === 'expense' ? 'bg-red-500' : 'bg-green-500'
+                  }`}>
+                    {categories.find(c => c.id === t.categoryId)?.icon || t.categoryPath?.[0]?.charAt(0) || (t.type === 'expense' ? '-' : '+')}
+                  </div>
+
+                  {/* 內容 */}
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-gray-800 dark:text-gray-200 text-sm truncate">
+                      {t.categoryPath?.join(' › ') || '未分類'}
+                    </div>
+                    {t.description && (
+                      <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{t.description}</div>
+                    )}
+                  </div>
+
+                  {/* 金額 */}
+                  <span className={`font-bold text-sm ${
+                    t.type === 'expense' ? 'text-red-500 dark:text-red-400' : 'text-green-500 dark:text-green-400'
+                  }`}>
+                    {t.type === 'expense' ? '-' : '+'}${t.amount.toLocaleString()}
+                  </span>
+
+                  {/* 刪除 */}
+                  <button
+                    onClick={(e) => handleDelete(e, t.id)}
+                    className="p-2 text-gray-400 hover:text-red-500 dark:hover:text-red-400 rounded-lg transition-colors"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       )}
     </div>
   )
