@@ -379,7 +379,6 @@ export function CalendarView({
               selectedDate.getDate() === day.date.getDate() &&
               selectedDate.getMonth() === day.date.getMonth()
             const dayIsToday = isToday(day.date)
-            const hasData = day.income > 0 || day.expense > 0
             const weekDay = index % 7
 
             return (
@@ -421,16 +420,6 @@ export function CalendarView({
                         </span>
                       )}
                     </div>
-
-                    {/* 訂閱指示點 */}
-                    {day.hasSubscription && (
-                      <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-orange-400 rounded-full" />
-                    )}
-
-                    {/* 有資料指示點 */}
-                    {hasData && !day.hasSubscription && (
-                      <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-gray-300 dark:bg-gray-600 rounded-full" />
-                    )}
                   </>
                 )}
               </button>

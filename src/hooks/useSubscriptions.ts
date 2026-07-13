@@ -130,9 +130,14 @@ export function useSubscriptions(
     processSubscriptions()
   }, [uid, subscriptions, addTransaction, transactions])
 
-  // 新增訂閱
+  // 新增訂閱（若已過扣款日，自動記帳模式會立即寫入交易）
   const addSubscription = useCallback(async (input: SubscriptionInput) => {
     if (!uid) return
+
+    const now = new Date()
+    const today = now.getDate()
+    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+    const shouldProcessNow = input.isActive && input.billingDay <= today
 
     const subscriptionsRef = collection(db, 'users', uid, 'subscriptions')
     const docData: SubscriptionDoc = {
@@ -143,10 +148,26 @@ export function useSubscriptions(
       billingDay: input.billingDay,
       mode: input.mode,
       isActive: input.isActive,
-      createdAt: Timestamp.now()
+      createdAt: Timestamp.now(),
+      // 若已過扣款日，設定 lastProcessedMonth 避免重複處理
+      ...(shouldProcessNow && { lastProcessedMonth: currentMonth })
     }
-    await addDoc(subscriptionsRef, docData)
-  }, [uid])
+    const docRef = await addDoc(subscriptionsRef, docData)
+
+    // 若已過扣款日且為自動模式，立即寫入交易
+    if (shouldProcessNow && input.mode === 'auto') {
+      await addTransaction({
+        type: 'expense',
+        amount: input.amount,
+        categoryId: input.categoryId,
+        categoryPath: input.categoryPath,
+        description: `${input.name} (自動)`,
+        date: new Date(now.getFullYear(), now.getMonth(), input.billingDay),
+        subscriptionId: docRef.id
+      })
+      console.log(`✅ 新增訂閱並自動記帳: ${input.name} $${input.amount}`)
+    }
+  }, [uid, addTransaction])
 
   // 更新訂閱
   const updateSubscription = useCallback(async (id: string, input: Partial<SubscriptionInput>) => {
