@@ -16,6 +16,7 @@ import { Subscription, SubscriptionInput, SubscriptionDoc, TransactionInput, Tra
 export function useSubscriptions(
   uid: string | undefined,
   addTransaction: (input: TransactionInput) => Promise<void>,
+  deleteTransaction: (id: string) => void,
   transactions?: Transaction[]
 ) {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
@@ -72,6 +73,10 @@ export function useSubscriptions(
         if (!sub.isActive) continue
         if (sub.lastProcessedMonth === currentMonth) continue
         if (sub.billingDay > today) continue
+
+        // 規則1：本月新增的訂閱不自動記帳（不追朔）
+        const createdMonth = `${sub.createdAt.getFullYear()}-${String(sub.createdAt.getMonth() + 1).padStart(2, '0')}`
+        if (createdMonth === currentMonth) continue
 
         // 檢查是否正在處理中，避免重複
         const processingKey = `${sub.id}-${currentMonth}`
@@ -164,13 +169,26 @@ export function useSubscriptions(
     }
   }, [uid])
 
-  // 刪除訂閱
+  // 刪除訂閱（同時刪除本月的關聯交易）
   const deleteSubscription = useCallback(async (id: string) => {
     if (!uid) return
 
+    // 規則3：刪除本月的關聯交易
+    if (transactions) {
+      const now = new Date()
+      const currentMonthTransactions = transactions.filter(t =>
+        t.subscriptionId === id &&
+        t.date.getFullYear() === now.getFullYear() &&
+        t.date.getMonth() === now.getMonth()
+      )
+      for (const t of currentMonthTransactions) {
+        deleteTransaction(t.id)
+      }
+    }
+
     const docRef = doc(db, 'users', uid, 'subscriptions', id)
     await deleteDoc(docRef)
-  }, [uid])
+  }, [uid, transactions, deleteTransaction])
 
   // 確認提醒（手動記帳）
   const confirmReminder = useCallback(async (sub: Subscription) => {
