@@ -51,6 +51,7 @@ function App() {
     addSubscription,
     updateSubscription,
     deleteSubscription,
+    hasCurrentMonthTransaction,
     confirmReminder,
     skipReminder,
     retrySubscription
@@ -148,6 +149,7 @@ function App() {
           addSubscription={addSubscription}
           updateSubscription={updateSubscription}
           deleteSubscription={deleteSubscription}
+          hasCurrentMonthTransaction={hasCurrentMonthTransaction}
           retrySubscription={retrySubscription}
           getChildren={getChildren}
           getCategoryPath={getCategoryPath}

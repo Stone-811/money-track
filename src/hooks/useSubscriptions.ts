@@ -74,10 +74,6 @@ export function useSubscriptions(
         if (sub.lastProcessedMonth === currentMonth) continue
         if (sub.billingDay > today) continue
 
-        // 規則1：本月新增的訂閱不自動記帳（不追朔）
-        const createdMonth = `${sub.createdAt.getFullYear()}-${String(sub.createdAt.getMonth() + 1).padStart(2, '0')}`
-        if (createdMonth === currentMonth) continue
-
         // 檢查是否正在處理中，避免重複
         const processingKey = `${sub.id}-${currentMonth}`
         if (processingRef.current.has(processingKey)) continue
@@ -169,12 +165,23 @@ export function useSubscriptions(
     }
   }, [uid])
 
-  // 刪除訂閱（同時刪除本月的關聯交易）
-  const deleteSubscription = useCallback(async (id: string) => {
+  // 檢查訂閱是否有本月交易
+  const hasCurrentMonthTransaction = useCallback((id: string): boolean => {
+    if (!transactions) return false
+    const now = new Date()
+    return transactions.some(t =>
+      t.subscriptionId === id &&
+      t.date.getFullYear() === now.getFullYear() &&
+      t.date.getMonth() === now.getMonth()
+    )
+  }, [transactions])
+
+  // 刪除訂閱（可選是否刪除本月交易）
+  const deleteSubscription = useCallback(async (id: string, deleteCurrentMonthTx: boolean = false) => {
     if (!uid) return
 
-    // 規則3：刪除本月的關聯交易
-    if (transactions) {
+    // 如果要刪除本月交易
+    if (deleteCurrentMonthTx && transactions) {
       const now = new Date()
       const currentMonthTransactions = transactions.filter(t =>
         t.subscriptionId === id &&
@@ -275,6 +282,7 @@ export function useSubscriptions(
     addSubscription,
     updateSubscription,
     deleteSubscription,
+    hasCurrentMonthTransaction,
     confirmReminder,
     skipReminder,
     retrySubscription

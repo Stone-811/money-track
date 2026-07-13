@@ -8,7 +8,8 @@ interface SubscriptionManagerProps {
   categories: Category[]
   addSubscription: (input: SubscriptionInput) => Promise<void>
   updateSubscription: (id: string, input: Partial<SubscriptionInput>) => Promise<void>
-  deleteSubscription: (id: string) => Promise<void>
+  deleteSubscription: (id: string, deleteCurrentMonthTx?: boolean) => Promise<void>
+  hasCurrentMonthTransaction: (id: string) => boolean
   retrySubscription: (sub: Subscription) => Promise<boolean | undefined>
   getChildren: (parentId: string | null, type: TransactionType) => Category[]
   getCategoryPath: (categoryId: string) => string[]
@@ -21,6 +22,7 @@ export function SubscriptionManager({
   addSubscription,
   updateSubscription,
   deleteSubscription,
+  hasCurrentMonthTransaction,
   retrySubscription,
   getChildren,
   getCategoryPath
@@ -109,8 +111,28 @@ export function SubscriptionManager({
   }
 
   const handleDelete = async (sub: Subscription) => {
-    if (window.confirm(`確定要刪除「${sub.name}」訂閱嗎？`)) {
-      await deleteSubscription(sub.id)
+    const hasTx = hasCurrentMonthTransaction(sub.id)
+
+    if (hasTx) {
+      // 本月有交易，詢問是否一併刪除
+      const choice = window.confirm(
+        `確定要刪除「${sub.name}」訂閱嗎？\n\n按「確定」會同時刪除本月的交易記錄\n按「取消」只刪除訂閱，保留交易記錄`
+      )
+      if (choice) {
+        // 確定：刪除訂閱 + 本月交易
+        await deleteSubscription(sub.id, true)
+      } else {
+        // 取消這裡變成「只刪除訂閱」
+        const confirmJustSub = window.confirm(`只刪除「${sub.name}」訂閱，保留本月交易記錄？`)
+        if (confirmJustSub) {
+          await deleteSubscription(sub.id, false)
+        }
+      }
+    } else {
+      // 沒有本月交易，直接確認刪除
+      if (window.confirm(`確定要刪除「${sub.name}」訂閱嗎？`)) {
+        await deleteSubscription(sub.id, false)
+      }
     }
   }
 
