@@ -303,16 +303,16 @@ export function QuickAddButton({
               </button>
             </div>
 
-            {/* 快速金額按鈕 */}
-            <div className="grid grid-cols-4 gap-2 mb-4">
+            {/* 快速金額按鈕 - 橫向排列 */}
+            <div className="flex gap-2 mb-4">
               {quickAmounts.map(amt => (
                 <button
                   key={amt}
                   onClick={() => setAmount(amt.toString())}
-                  className={`py-3 rounded-xl font-semibold transition-all ${
+                  className={`flex-1 py-2.5 rounded-full text-sm font-medium transition-all active:scale-95 ${
                     amount === amt.toString()
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      ? 'bg-indigo-500 text-white shadow-sm'
+                      : 'bg-gray-100 dark:bg-gray-700/80 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                   }`}
                 >
                   ${amt}
@@ -323,14 +323,14 @@ export function QuickAddButton({
             {/* 金額輸入 */}
             <div className="mb-4">
               <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-bold text-gray-400 dark:text-gray-500">$</span>
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-bold text-gray-300 dark:text-gray-500">$</span>
                 <input
                   type="number"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   placeholder="0"
                   min="0"
-                  className="w-full pl-10 pr-4 py-4 text-2xl font-bold text-center bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:bg-white dark:focus:bg-gray-600 border-0 transition-all"
+                  className="w-full pl-10 pr-4 py-4 text-2xl font-bold text-center bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:bg-white dark:focus:bg-gray-600 border-0 transition-all"
                 />
               </div>
             </div>
@@ -354,7 +354,7 @@ export function QuickAddButton({
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="備註（選填）"
-                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:bg-white dark:focus:bg-gray-600 border-0 transition-all"
+                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:bg-white dark:focus:bg-gray-600 border-0 transition-all"
               />
             </div>
 
@@ -363,13 +363,13 @@ export function QuickAddButton({
               <button
                 onClick={handleSubmit}
                 disabled={submitting || !amount || !categoryId}
-                className="flex-1 py-3.5 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-2xl font-semibold hover:from-blue-600 hover:to-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-blue-500/25"
+                className="flex-1 py-3.5 bg-gradient-to-r from-indigo-500 to-violet-600 text-white rounded-2xl font-semibold hover:from-indigo-600 hover:to-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-[0.98] shadow-lg shadow-indigo-500/25"
               >
                 {submitting ? '儲存中...' : '記帳'}
               </button>
               <button
                 onClick={handleClose}
-                className="px-6 py-3.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-2xl font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                className="px-6 py-3.5 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-2xl font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
               >
                 取消
               </button>
