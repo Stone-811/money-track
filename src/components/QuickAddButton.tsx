@@ -188,8 +188,6 @@ export function QuickAddButton({
     reader.readAsDataURL(file)
   }
 
-  const quickAmounts = [50, 100, 200, 500]
-
   if (!isOpen) return null
 
   return (
@@ -301,23 +299,6 @@ export function QuickAddButton({
               >
                 收入
               </button>
-            </div>
-
-            {/* 快速金額按鈕 - 橫向排列 */}
-            <div className="flex gap-2 mb-4">
-              {quickAmounts.map(amt => (
-                <button
-                  key={amt}
-                  onClick={() => setAmount(amt.toString())}
-                  className={`flex-1 py-2.5 rounded-full text-sm font-medium transition-all active:scale-95 ${
-                    amount === amt.toString()
-                      ? 'bg-indigo-500 text-white shadow-sm'
-                      : 'bg-gray-100 dark:bg-gray-700/80 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                  }`}
-                >
-                  ${amt}
-                </button>
-              ))}
             </div>
 
             {/* 金額輸入 */}
