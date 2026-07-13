@@ -149,21 +149,34 @@ export function CategoryPieChart({ transactions }: CategoryPieChartProps) {
     : []
   const subcategoryTransactionsTotal = subcategoryTransactions.reduce((sum, t) => sum + t.amount, 0)
 
-  // 當資料變化時，使用平滑過渡
+  // 當資料變化時，使用平滑過渡（僅在大類和中類切換時）
   const currentData = selectedCategory ? subcategoryData : data
+
+  // 初始載入時設定 displayData
   useEffect(() => {
-    if (currentData.length > 0 && !selectedSubcategory) {
+    if (data.length > 0 && displayData.length === 0 && !selectedCategory) {
+      setDisplayData(data)
+    }
+  }, [data])
+
+  // 切換視圖時的過渡動畫
+  useEffect(() => {
+    // 選中子類時不需要過渡（會顯示交易明細）
+    if (selectedSubcategory) return
+
+    if (currentData.length > 0) {
       setIsTransitioning(true)
       const timer = setTimeout(() => {
         setDisplayData(currentData)
         setAnimationKey(prev => prev + 1)
         setIsTransitioning(false)
-      }, 150) // 短暫延遲讓淡出完成
+      }, 150)
       return () => clearTimeout(timer)
-    } else if (!selectedSubcategory) {
-      setDisplayData(currentData)
+    } else {
+      setDisplayData([])
+      setIsTransitioning(false)
     }
-  }, [currentData, selectedSubcategory])
+  }, [selectedCategory, selectedMonth])
 
   const onPieEnter = useCallback((_: any, index: number) => {
     setActiveIndex(index)

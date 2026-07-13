@@ -34,7 +34,6 @@ export function CalendarView({
   const [savingBudget, setSavingBudget] = useState(false)
 
   // 交易表單 state
-  const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [formType, setFormType] = useState<TransactionType>('expense')
   const [formAmount, setFormAmount] = useState('')
@@ -219,7 +218,6 @@ export function CalendarView({
 
   // 交易表單函數
   const resetForm = () => {
-    setShowForm(false)
     setEditingId(null)
     setFormAmount('')
     setFormCategoryId('')
@@ -236,7 +234,6 @@ export function CalendarView({
     setFormCategoryId(t.categoryId)
     setFormCategoryPath(t.categoryPath)
     setFormDescription(t.description)
-    setShowForm(true)
   }
 
   const handleCategorySelect = (id: string, path: string[]) => {
@@ -642,21 +639,8 @@ export function CalendarView({
             </div>
           </div>
 
-          {/* 新增按鈕或表單 */}
-          {!showForm ? (
-            <div className="p-3 border-b border-gray-100 dark:border-gray-700">
-              <button
-                onClick={() => { resetForm(); setShowForm(true) }}
-                className="w-full py-2.5 bg-gradient-to-r from-indigo-500 to-violet-600 text-white rounded-xl font-medium hover:from-indigo-600 hover:to-violet-700 transition-all duration-200 flex items-center justify-center gap-2 shadow-sm active:scale-[0.98]"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                新增記錄
-              </button>
-            </div>
-          ) : (
-            <div className="p-3 border-b border-gray-100 dark:border-gray-700 space-y-3">
+          {/* 新增表單 */}
+          <div className="p-3 border-b border-gray-100 dark:border-gray-700 space-y-3">
               {/* 語音按鈕 + 類型切換 */}
               <div className="flex items-center gap-2">
                 <div className="flex-1 flex bg-gray-100 dark:bg-gray-700 p-1 rounded-xl">
@@ -759,8 +743,7 @@ export function CalendarView({
                   取消
                 </button>
               </div>
-            </div>
-          )}
+          </div>
 
           {/* 交易列表 */}
           {selectedDayData.transactions.length === 0 ? (
