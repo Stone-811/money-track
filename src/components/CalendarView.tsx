@@ -1,6 +1,5 @@
-import { useState, useMemo, useEffect, FormEvent, useRef } from 'react'
-import { Transaction, Subscription, TransactionInput, TransactionType, Category, Budget } from '../types'
-import { CategoryPicker } from './CategoryPicker'
+import { useState, useMemo, useEffect, FormEvent } from 'react'
+import { Transaction, Subscription, Category, Budget } from '../types'
 
 interface CalendarViewProps {
   transactions: Transaction[]
@@ -9,10 +8,6 @@ interface CalendarViewProps {
   getBudgetForMonth: (month: string) => Budget | undefined
   onSetBudget: (month: string, amount: number) => Promise<void>
   onDeleteTransaction: (id: string) => void
-  onAddTransaction: (input: TransactionInput) => Promise<void>
-  onUpdateTransaction: (id: string, input: Partial<TransactionInput>) => Promise<void>
-  getChildren: (parentId: string | null, type: TransactionType) => Category[]
-  getCategoryPath: (categoryId: string) => string[]
 }
 
 export function CalendarView({
@@ -21,28 +16,13 @@ export function CalendarView({
   categories,
   getBudgetForMonth,
   onSetBudget,
-  onDeleteTransaction,
-  onAddTransaction,
-  onUpdateTransaction,
-  getChildren,
-  getCategoryPath
+  onDeleteTransaction
 }: CalendarViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date()) // 預設選中今天
   const [editingBudget, setEditingBudget] = useState(false)
   const [budgetAmount, setBudgetAmount] = useState('')
   const [savingBudget, setSavingBudget] = useState(false)
-
-  // 交易表單 state
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [formType, setFormType] = useState<TransactionType>('expense')
-  const [formAmount, setFormAmount] = useState('')
-  const [formCategoryId, setFormCategoryId] = useState('')
-  const [formCategoryPath, setFormCategoryPath] = useState<string[]>([])
-  const [formDescription, setFormDescription] = useState('')
-  const [formSubmitting, setFormSubmitting] = useState(false)
-  const [isListening, setIsListening] = useState(false)
-  const recognitionRef = useRef<any>(null)
 
   const year = currentDate.getFullYear()
   const month = currentDate.getMonth()
@@ -216,151 +196,10 @@ export function CalendarView({
     return amount.toLocaleString()
   }
 
-  // 交易表單函數
-  const resetForm = () => {
-    setEditingId(null)
-    setFormAmount('')
-    setFormCategoryId('')
-    setFormCategoryPath([])
-    setFormDescription('')
-    setFormType('expense')
-    stopListening()
-  }
-
-  const handleEdit = (t: Transaction) => {
-    setEditingId(t.id)
-    setFormType(t.type)
-    setFormAmount(t.amount.toString())
-    setFormCategoryId(t.categoryId)
-    setFormCategoryPath(t.categoryPath)
-    setFormDescription(t.description)
-  }
-
-  const handleCategorySelect = (id: string, path: string[]) => {
-    setFormCategoryId(id)
-    setFormCategoryPath(path)
-  }
-
   const handleDelete = (e: React.MouseEvent, id: string) => {
     e.stopPropagation()
     if (window.confirm('確定要刪除這筆記錄嗎？')) {
       onDeleteTransaction(id)
-    }
-  }
-
-  const handleSubmit = async () => {
-    if (!formAmount || !formCategoryId || !selectedDate) return
-
-    setFormSubmitting(true)
-    try {
-      if (editingId) {
-        await onUpdateTransaction(editingId, {
-          type: formType,
-          amount: parseFloat(formAmount),
-          categoryId: formCategoryId,
-          categoryPath: formCategoryPath,
-          description: formDescription
-        })
-      } else {
-        await onAddTransaction({
-          type: formType,
-          amount: parseFloat(formAmount),
-          categoryId: formCategoryId,
-          categoryPath: formCategoryPath,
-          description: formDescription,
-          date: selectedDate
-        })
-      }
-      if ('vibrate' in navigator) {
-        navigator.vibrate(50)
-      }
-      resetForm()
-    } finally {
-      setFormSubmitting(false)
-    }
-  }
-
-  // 語音輸入
-  const startListening = () => {
-    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-      alert('您的瀏覽器不支援語音輸入')
-      return
-    }
-
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
-    const recognition = new SpeechRecognition()
-    recognitionRef.current = recognition
-
-    recognition.lang = 'zh-TW'
-    recognition.continuous = false
-    recognition.interimResults = false
-
-    recognition.onstart = () => setIsListening(true)
-    recognition.onend = () => setIsListening(false)
-    recognition.onerror = () => setIsListening(false)
-
-    recognition.onresult = (event: any) => {
-      const transcript = event.results[0][0].transcript
-      parseVoiceInput(transcript)
-    }
-
-    recognition.start()
-  }
-
-  const stopListening = () => {
-    if (recognitionRef.current) {
-      recognitionRef.current.stop()
-    }
-    setIsListening(false)
-  }
-
-  const parseVoiceInput = (text: string) => {
-    const numberMatch = text.match(/(\d+)/)
-    if (numberMatch) {
-      setFormAmount(numberMatch[1])
-    }
-
-    const expenseCategories = categories.filter(c => c.type === formType)
-    let matchedCategory: Category | null = null
-    let matchedCategoryName = ''
-
-    const subCategories = expenseCategories.filter(c => c.level === 2)
-    for (const cat of subCategories) {
-      if (text.includes(cat.name)) {
-        matchedCategory = cat
-        matchedCategoryName = cat.name
-        break
-      }
-    }
-
-    if (!matchedCategory) {
-      const mainCategories = expenseCategories.filter(c => c.level === 1)
-      for (const cat of mainCategories) {
-        if (text.includes(cat.name)) {
-          matchedCategory = cat
-          matchedCategoryName = cat.name
-          break
-        }
-      }
-    }
-
-    if (matchedCategory) {
-      setFormCategoryId(matchedCategory.id)
-      setFormCategoryPath(getCategoryPath(matchedCategory.id))
-    }
-
-    let cleanText = text
-      .replace(/\d+/g, '')
-      .replace(/[元塊錢块圓]*/g, '')
-      .replace(/花了|花|共|總共|一共/g, '')
-
-    if (matchedCategoryName) {
-      cleanText = cleanText.replace(matchedCategoryName, '')
-    }
-
-    cleanText = cleanText.trim()
-    if (cleanText) {
-      setFormDescription(cleanText)
     }
   }
 
@@ -374,22 +213,37 @@ export function CalendarView({
     <div className="space-y-3">
       {/* 月份摘要 + 預算（合併區塊） */}
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-md overflow-hidden transition-all duration-300 border border-gray-100 dark:border-gray-700">
-        {/* 月份導航 */}
-        <div className="bg-gradient-to-r from-indigo-500 to-violet-600 px-4 py-3 flex items-center justify-between">
+        {/* 月份導航（支援滑動） */}
+        <div
+          className="px-4 py-3 flex items-center justify-between border-b border-gray-100 dark:border-gray-700"
+          onTouchStart={(e) => {
+            const touch = e.touches[0]
+            e.currentTarget.dataset.startX = touch.clientX.toString()
+          }}
+          onTouchEnd={(e) => {
+            const startX = parseFloat(e.currentTarget.dataset.startX || '0')
+            const endX = e.changedTouches[0].clientX
+            const diff = endX - startX
+            if (Math.abs(diff) > 50) {
+              if (diff > 0) goToPrevMonth()
+              else goToNextMonth()
+            }
+          }}
+        >
           <button
             onClick={goToPrevMonth}
-            className="p-1.5 hover:bg-white/20 rounded-full transition-colors"
+            className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
           >
-            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          <h2 className="text-lg font-bold text-white">{year}年{month + 1}月</h2>
+          <h2 className="text-base font-bold text-gray-800 dark:text-gray-100">{year}年{month + 1}月</h2>
           <button
             onClick={goToNextMonth}
-            className="p-1.5 hover:bg-white/20 rounded-full transition-colors"
+            className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
           >
-            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </button>
@@ -639,112 +493,6 @@ export function CalendarView({
             </div>
           </div>
 
-          {/* 新增表單 */}
-          <div className="p-3 border-b border-gray-100 dark:border-gray-700 space-y-3">
-              {/* 語音按鈕 + 類型切換 */}
-              <div className="flex items-center gap-2">
-                <div className="flex-1 flex bg-gray-100 dark:bg-gray-700 p-1 rounded-xl">
-                  <button
-                    type="button"
-                    onClick={() => { setFormType('expense'); setFormCategoryId(''); setFormCategoryPath([]) }}
-                    className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
-                      formType === 'expense'
-                        ? 'bg-white dark:bg-gray-600 text-red-500 dark:text-red-400 shadow-sm'
-                        : 'text-gray-500 dark:text-gray-400'
-                    }`}
-                  >
-                    支出
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { setFormType('income'); setFormCategoryId(''); setFormCategoryPath([]) }}
-                    className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
-                      formType === 'income'
-                        ? 'bg-white dark:bg-gray-600 text-green-500 dark:text-green-400 shadow-sm'
-                        : 'text-gray-500 dark:text-gray-400'
-                    }`}
-                  >
-                    收入
-                  </button>
-                </div>
-                <button
-                  onClick={isListening ? stopListening : startListening}
-                  className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
-                    isListening
-                      ? 'bg-red-500 text-white animate-pulse'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
-                  }`}
-                  title="語音輸入"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                  </svg>
-                </button>
-              </div>
-
-              {/* 語音提示 */}
-              {isListening && (
-                <div className="p-2 bg-red-50 dark:bg-red-900/30 rounded-lg text-center">
-                  <span className="text-sm text-red-600 dark:text-red-400 flex items-center justify-center gap-2">
-                    <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                    說出分類和金額，如「午餐 120」
-                  </span>
-                </div>
-              )}
-
-              {/* 金額 */}
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-lg font-bold text-gray-400">$</span>
-                <input
-                  type="number"
-                  value={formAmount}
-                  onChange={(e) => setFormAmount(e.target.value)}
-                  placeholder="0"
-                  min="0"
-                  className="w-full pl-8 pr-3 py-2.5 text-lg font-bold bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-indigo-500 border-0 transition-all"
-                  autoFocus
-                />
-              </div>
-
-              {/* 分類 */}
-              <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-3">
-                <CategoryPicker
-                  type={formType}
-                  categories={categories}
-                  selectedId={formCategoryId}
-                  onSelect={handleCategorySelect}
-                  getChildren={getChildren}
-                  getCategoryPath={getCategoryPath}
-                />
-              </div>
-
-              {/* 備註 */}
-              <input
-                type="text"
-                value={formDescription}
-                onChange={(e) => setFormDescription(e.target.value)}
-                placeholder="備註（選填）"
-                className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 rounded-xl focus:ring-2 focus:ring-indigo-500 border-0 text-sm"
-              />
-
-              {/* 按鈕 */}
-              <div className="flex gap-2">
-                <button
-                  onClick={handleSubmit}
-                  disabled={formSubmitting || !formAmount || !formCategoryId}
-                  className="flex-1 py-2.5 bg-gradient-to-r from-indigo-500 to-violet-600 text-white rounded-xl font-medium hover:from-indigo-600 hover:to-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 active:scale-[0.98]"
-                >
-                  {formSubmitting ? '...' : editingId ? '更新' : '確定'}
-                </button>
-                <button
-                  onClick={resetForm}
-                  className="px-4 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                >
-                  取消
-                </button>
-              </div>
-          </div>
-
           {/* 交易列表 */}
           {selectedDayData.transactions.length === 0 ? (
             <div className="py-8 text-center">
@@ -760,10 +508,7 @@ export function CalendarView({
               {selectedDayData.transactions.map((t) => (
                 <div
                   key={t.id}
-                  onClick={() => handleEdit(t)}
-                  className={`px-4 py-3 flex items-center gap-3 cursor-pointer active:bg-gray-50 dark:active:bg-gray-700 transition-all duration-200 ${
-                    editingId === t.id ? 'bg-indigo-50 dark:bg-indigo-900/30' : ''
-                  }`}
+                  className="px-4 py-3 flex items-center gap-3"
                 >
                   {/* 圖標 */}
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white text-sm shadow-sm ${

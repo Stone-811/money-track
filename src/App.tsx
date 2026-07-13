@@ -31,7 +31,6 @@ function App() {
   const {
     transactions,
     addTransaction,
-    updateTransaction,
     deleteTransaction
   } = useTransactions(uid)
   const { setBudget, getBudgetForMonth } = useBudget(uid)
@@ -122,10 +121,6 @@ function App() {
                 getBudgetForMonth={getBudgetForMonth}
                 onSetBudget={handleSetBudget}
                 onDeleteTransaction={deleteTransaction}
-                onAddTransaction={addTransaction}
-                onUpdateTransaction={updateTransaction}
-                getChildren={getChildren}
-                getCategoryPath={getCategoryPath}
               />
             </>
           )}
