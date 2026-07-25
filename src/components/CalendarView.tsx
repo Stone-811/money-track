@@ -12,6 +12,8 @@ interface CalendarViewProps {
   onUpdateTransaction: (id: string, input: Partial<TransactionInput>) => Promise<void>
   getChildren: (parentId: string | null, type: TransactionType) => Category[]
   getCategoryPath: (categoryId: string) => string[]
+  selectedDate: Date
+  onSelectDate: (date: Date) => void
 }
 
 export function CalendarView({
@@ -23,10 +25,11 @@ export function CalendarView({
   onDeleteTransaction,
   onUpdateTransaction,
   getChildren,
-  getCategoryPath
+  getCategoryPath,
+  selectedDate,
+  onSelectDate
 }: CalendarViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date())
-  const [selectedDate, setSelectedDate] = useState<Date | null>(new Date()) // 預設選中今天
   const [editingBudget, setEditingBudget] = useState(false)
   const [budgetAmount, setBudgetAmount] = useState('')
   const [savingBudget, setSavingBudget] = useState(false)
@@ -241,7 +244,7 @@ export function CalendarView({
 
   // 處理日期切換（來自 DayDetail 的左右滑動或按鈕）
   const handleDateChange = (newDate: Date) => {
-    setSelectedDate(newDate)
+    onSelectDate(newDate)
     // 如果切換到不同月份，同步更新日曆視圖
     if (newDate.getFullYear() !== year || newDate.getMonth() !== month) {
       setCurrentDate(newDate)
@@ -435,7 +438,7 @@ export function CalendarView({
               <button
                 key={index}
                 disabled={!day.date}
-                onClick={() => day.date && setSelectedDate(day.date)}
+                onClick={() => day.date && onSelectDate(day.date)}
                 className={`
                   relative h-16 flex flex-col items-center justify-start pt-1
                   border-b border-r border-gray-100 dark:border-gray-700 transition-all duration-200

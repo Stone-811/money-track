@@ -61,6 +61,7 @@ function App() {
   } = useSubscriptions(uid, addTransaction, deleteTransaction, transactions)
 
   const [activeTab, setActiveTab] = useState<TabId>('calendar')
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date())
   const { toasts, showToast, removeToast } = useToast()
 
   // 包裝 addTransaction 以顯示 Toast
@@ -136,6 +137,8 @@ function App() {
                 onUpdateTransaction={updateTransaction}
                 getChildren={getChildren}
                 getCategoryPath={getCategoryPath}
+                selectedDate={selectedDate}
+                onSelectDate={setSelectedDate}
               />
             </>
           )}
@@ -353,6 +356,7 @@ function App() {
         onAdd={handleAddTransaction}
         getChildren={getChildren}
         getCategoryPath={getCategoryPath}
+        selectedDate={selectedDate}
       />
 
       {/* 分類管理彈窗 */}

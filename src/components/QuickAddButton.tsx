@@ -9,6 +9,7 @@ interface QuickAddButtonProps {
   onAdd: (input: TransactionInput) => Promise<void>
   getChildren: (parentId: string | null, type: TransactionType) => Category[]
   getCategoryPath: (categoryId: string) => string[]
+  selectedDate?: Date
 }
 
 export function QuickAddButton({
@@ -17,7 +18,8 @@ export function QuickAddButton({
   categories,
   onAdd,
   getChildren,
-  getCategoryPath
+  getCategoryPath,
+  selectedDate
 }: QuickAddButtonProps) {
   const [type, setType] = useState<TransactionType>('expense')
   const [amount, setAmount] = useState('')
@@ -65,7 +67,7 @@ export function QuickAddButton({
         categoryId,
         categoryPath,
         description,
-        date: new Date()
+        date: selectedDate || new Date()
       })
       // 震動回饋
       if ('vibrate' in navigator) {
@@ -215,7 +217,14 @@ export function QuickAddButton({
 
           <div className="px-5 pb-5 overflow-y-auto max-h-[calc(90vh-40px)]">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">快速記帳</h3>
+              <div>
+                <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">快速記帳</h3>
+                {selectedDate && (
+                  <p className="text-sm text-indigo-500 dark:text-indigo-400 mt-0.5">
+                    {selectedDate.getMonth() + 1}/{selectedDate.getDate()}（{['週日', '週一', '週二', '週三', '週四', '週五', '週六'][selectedDate.getDay()]}）
+                  </p>
+                )}
+              </div>
 
               {/* 拍照和語音按鈕 */}
               <div className="flex gap-2">
