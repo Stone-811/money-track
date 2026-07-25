@@ -15,6 +15,8 @@ import { SubscriptionReminder } from './components/SubscriptionReminder'
 import { LoginScreen } from './components/LoginScreen'
 import { QuickAddButton } from './components/QuickAddButton'
 import { CalendarSkeleton, StatsSkeleton } from './components/Skeleton'
+import { Toast, useToast } from './components/Toast'
+import { TransactionInput } from './types'
 
 function App() {
   const { isDark, toggle: toggleDarkMode } = useDarkMode()
@@ -59,6 +61,14 @@ function App() {
   } = useSubscriptions(uid, addTransaction, deleteTransaction, transactions)
 
   const [activeTab, setActiveTab] = useState<TabId>('calendar')
+  const { toasts, showToast, removeToast } = useToast()
+
+  // 包裝 addTransaction 以顯示 Toast
+  const handleAddTransaction = async (input: TransactionInput) => {
+    await addTransaction(input)
+    const typeText = input.type === 'expense' ? '支出' : '收入'
+    showToast('success', `已新增${typeText} $${input.amount.toLocaleString()}`)
+  }
 
   // 切換分頁時關閉彈窗
   const handleTabChange = (tab: TabId) => {
@@ -340,7 +350,7 @@ function App() {
         isOpen={showQuickAdd}
         onClose={() => setShowQuickAdd(false)}
         categories={categories}
-        onAdd={addTransaction}
+        onAdd={handleAddTransaction}
         getChildren={getChildren}
         getCategoryPath={getCategoryPath}
       />
@@ -435,6 +445,9 @@ function App() {
           </div>
         </div>
       )}
+
+      {/* Toast 通知 */}
+      <Toast toasts={toasts} onRemove={removeToast} />
     </Layout>
   )
 }

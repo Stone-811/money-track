@@ -256,13 +256,6 @@ export function CalendarView({
     return amount.toLocaleString()
   }
 
-  const handleDelete = (e: React.MouseEvent, id: string) => {
-    e.stopPropagation()
-    if (window.confirm('確定要刪除這筆記錄嗎？')) {
-      onDeleteTransaction(id)
-    }
-  }
-
   // 格式化選中日期
   const formatSelectedDate = (d: Date) => {
     const weekDays = ['週日', '週一', '週二', '週三', '週四', '週五', '週六']
@@ -364,7 +357,10 @@ export function CalendarView({
               </div>
             </form>
           ) : budgetInfo.totalBudget > 0 ? (
-            <div className="flex items-center gap-3">
+            <div
+              onClick={() => { setBudgetAmount(budgetInfo.totalBudget.toString()); setEditingBudget(true) }}
+              className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/30 -mx-3 px-3 py-1.5 -my-1.5 rounded-lg transition-colors group"
+            >
               {/* 預算進度條 */}
               <div className="flex-1">
                 <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1.5">
@@ -391,16 +387,10 @@ export function CalendarView({
                   {budgetInfo.isOverBudget ? '超支' : '剩餘'}
                 </div>
               </div>
-              {/* 編輯按鈕 */}
-              <button
-                onClick={() => { setBudgetAmount(budgetInfo.totalBudget.toString()); setEditingBudget(true) }}
-                className="p-1.5 text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
-                title="修改預算"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                </svg>
-              </button>
+              {/* 編輯提示 */}
+              <svg className="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:text-indigo-500 dark:group-hover:text-indigo-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
             </div>
           ) : (
             <button
@@ -545,12 +535,13 @@ export function CalendarView({
           {/* 交易列表 */}
           {selectedDayData.transactions.length === 0 ? (
             <div className="py-8 text-center">
-              <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-2">
-                <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              <div className="w-14 h-14 bg-gradient-to-br from-indigo-100 to-violet-100 dark:from-indigo-900/30 dark:to-violet-900/30 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                <svg className="w-7 h-7 text-indigo-500 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
               </div>
-              <p className="text-sm text-gray-400">當日無交易記錄</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">當日無交易記錄</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">點擊下方 + 按鈕開始記帳</p>
             </div>
           ) : (
             <div className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -577,22 +568,15 @@ export function CalendarView({
                     )}
                   </div>
 
-                  {/* 金額 */}
+                  {/* 金額與箭頭 */}
                   <span className={`font-bold text-sm ${
                     t.type === 'expense' ? 'text-red-500 dark:text-red-400' : 'text-green-500 dark:text-green-400'
                   }`}>
                     {t.type === 'expense' ? '-' : '+'}${t.amount.toLocaleString()}
                   </span>
-
-                  {/* 刪除 */}
-                  <button
-                    onClick={(e) => handleDelete(e, t.id)}
-                    className="p-2 text-gray-400 hover:text-red-500 dark:hover:text-red-400 rounded-lg transition-colors"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </button>
+                  <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
                 </div>
               ))}
             </div>
@@ -700,6 +684,22 @@ export function CalendarView({
                   className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                 />
               </div>
+
+              {/* 刪除按鈕 */}
+              <button
+                onClick={() => {
+                  if (window.confirm('確定要刪除這筆交易嗎？')) {
+                    onDeleteTransaction(editingTransaction.id)
+                    closeEditTransaction()
+                  }
+                }}
+                className="w-full py-2.5 text-red-500 dark:text-red-400 font-medium hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors flex items-center justify-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                刪除此筆交易
+              </button>
             </div>
 
             {/* 按鈕 */}
